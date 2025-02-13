@@ -2,6 +2,7 @@ import numpy as np
 
 from gurobipy import *
 # FUNCTION TO DIRECTLY SOLVE CAUSAL AND BICAUSAL OT VIA LINEAR PROGRAMMING
+# Becareful this solves not  going backward but rather solves the big LP problem with a lot of constraignt
 def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0, outputflag=1, causal=0, anticausal=0):
     """
     :param margs: list with 2 entries, each entry being a discrete probability measure on R^n, where x_list is an [N, n] array

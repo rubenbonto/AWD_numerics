@@ -1,6 +1,31 @@
 from scipy.optimize import linprog
 
-def solver(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
+
+import ot
+import numpy as np
+
+def solver_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
+    """
+    Solve for the optimal transport plan using the POT library's EMD solver.
+
+    Parameters:
+      distance_matrix_subset (np.ndarray): A 2D cost matrix.
+      pi_ratios (np.ndarray): 1D source distribution (row marginals).
+      pi_tilde_ratios (np.ndarray): 1D target distribution (column marginals).
+
+    Returns:
+      np.ndarray: The optimal transport plan (probability matrix).
+    """
+    # Check if total masses match (necessary for balanced optimal transport)
+    if not np.isclose(np.sum(pi_ratios), np.sum(pi_tilde_ratios)):
+        raise ValueError("The total mass of the source and target distributions must be equal.")
+
+    # Compute the optimal transport plan using the EMD (Earth Mover's Distance) algorithm.
+    probability_matrix = ot.emd(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
+    
+    return probability_matrix
+
+def solver_lp(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
     """
     Solve for the optimal probability matrix that minimizes the cost when
     multiplied with the distance_matrix_subset.

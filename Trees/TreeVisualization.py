@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 from collections import defaultdict
-from Trees.Tree_Node import TreeNode
+from Tree_Node import TreeNode
 
 def visualize_tree(tree_root, title="Tree Visualization"):
     """

@@ -23,9 +23,9 @@ def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg):
     beta = np.ones(n1)
     gamma = np.ones(n2)
     
-    max_iterations = 1000
+    max_iterations = 400
     iteration = 0
-    epsilon = 1e-10  # Threshold for negligible values
+    epsilon = 1e-5  # Threshold for negligible values
     
     while iteration < max_iterations:
         iteration += 1

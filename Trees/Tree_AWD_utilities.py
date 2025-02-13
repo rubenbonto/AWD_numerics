@@ -1,6 +1,6 @@
 import numpy as np
 from collections import deque
-from Trees.Tree_Node import TreeNode
+from Tree_Node import TreeNode
 
 def get_nodes_at_depth(tree_root, depth):
     """Collect all nodes at a specific depth from the root."""
