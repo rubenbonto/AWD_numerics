@@ -1,9 +1,24 @@
 import torch
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
+import time
+import numpy as np
+import matplotlib.pyplot as plt
 
+"""
+This module implements a neural network-based approach for learning conditional distributions on continuous spaces.
+The approach is inspired by the paper:
 
+Cyril Bénézet, Ziteng Cheng, and Sebastian Jaimungal (2024). "Learning conditional distributions on continuous spaces."
+   - arXiv:2406.09375 [stat.ML]. Available at: https://arxiv.org/abs/2406.09375
 
+The original code is from the GitHub repository: https://github.com/zcheng-a/LCD_kNN
+
+The main goal is to estimate a conditional distribution by training a model that, given X, learns a discrete measure on Y.
+The input consists of sample paths of the form (d_X + d_Y), where d_X represents the conditioning variables and d_Y the target variables.
+"""
 
 # Main implementation
 
@@ -212,14 +227,6 @@ class AtomNetLip(nn.Module):
 
 
 
-
-
-
-
-
-
-
-
 # Sinkhorn algorithm
 
 def my_Sinkhorn(cost_mat_batch, n_iter_skh=1, one_over_eps=1, bool_sparse=False, gamma_sparse=0.5, device=torch.device('cpu')):
@@ -260,12 +267,6 @@ def my_Sinkhorn(cost_mat_batch, n_iter_skh=1, one_over_eps=1, bool_sparse=False,
         return torch.sum( tr_plan * cost_mat_batch ) / n_batch
 
 
-
-
-
-
-
-
 # Functions for loss computation with exact nearest neighbor search
 
 def prepare_atoms_batch(atomnet, data_tensor, x_batch, k, weight=1, device=torch.device('cpu'), bool_forloop_nns=False):
@@ -292,8 +293,6 @@ def prepare_atoms_batch(atomnet, data_tensor, x_batch, k, weight=1, device=torch
 
     return mu_hat, mu_approx
 
-
-
 def compute_loss_sinkhorn_batch(atomnet, data_tensor, x_batch, k,                                                   ### basics
                                 n_iter_skh=1, one_over_eps=1, bool_sparse=False, gamma_sparse=0.9,                  ### for sinkhorn
                                 device=torch.device('cpu'), bool_forloop_nns=False):
@@ -317,14 +316,6 @@ def compute_loss_sinkhorn_batch(atomnet, data_tensor, x_batch, k,               
     loss = my_Sinkhorn(cost_mat_batch, n_iter_skh, one_over_eps,  bool_sparse, gamma_sparse, device=device)
 
     return loss
-
-
-
-
-
-
-
-
 
 
 
@@ -435,3 +426,115 @@ def compute_loss_sinkhorn_rbsp(
     loss = my_Sinkhorn(cost_mat_batch, n_iter_skh, one_over_eps, bool_sparse, gamma_sparse, device=device)
 
     return loss
+
+def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_batch=100, lr=1e-3, nns_type=' '):
+    """
+    Trains a conditional density estimator using LearnCondDistn_kNN.
+    
+    Parameters:
+        data_tensor (torch.Tensor): Data tensor with first d_X columns for X and remaining for Y.
+        d_X (int): Dimension of input X (default: 1).
+        d_Y (int): Dimension of target Y (default: 1).
+        k (int): Number of atoms to use (and also the k for nearest neighbors) (default: 55).
+        n_iter (int): Number of training iterations (default: 1500).
+        n_batch (int): Batch size for loss computation (default: 100).
+        lr (float): Learning rate (default: 1e-3).
+        nns_type (str): Type of nearest neighbor search ('rbsp' for approximate, or other value for exact).
+    
+    Returns:
+        estimator (LearnCondDistn_kNN): The trained estimator.
+        loss_history (list): List of loss values recorded every 100 iterations.
+        n_nan (int): Number of iterations where loss was NaN.
+    """
+    # Create an instance of the estimator
+    estimator = LearnCondDistn_kNN(d_X=d_X, d_Y=d_Y, data_tensor=data_tensor)
+    
+    # Initialize the network (using the standard version here)
+    estimator.init_net_std(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
+    
+    optimizer = optim.Adam(estimator.atomnet.parameters(), lr=lr)
+    loss_history = []
+    n_nan = 0
+
+    t_start = time.time()
+    for i in range(n_iter):
+        estimator.atomnet.train()
+        
+        # Set the loss parameters based on iteration schedule for stability.
+        if i <= 100:
+            estimator.set_compute_loss_param(k, n_batch=n_batch, n_iter_skh=5, one_over_eps=1, nns_type=nns_type)
+        elif i <= 500:
+            estimator.set_compute_loss_param(k, n_batch=n_batch, n_iter_skh=5, one_over_eps=5, nns_type=nns_type)
+        else:
+            estimator.set_compute_loss_param(k, n_batch=n_batch, n_iter_skh=10, one_over_eps=10,
+                                             bool_sparse=True, gamma_sparse=0.5, nns_type=nns_type)
+    
+        loss = estimator.compute_loss()
+    
+        if torch.isnan(loss):
+            n_nan += 1
+            continue
+        
+        optimizer.zero_grad()
+        loss.backward()
+        # Apply gradient clipping to help stabilize training.
+        torch.nn.utils.clip_grad_norm_(estimator.atomnet.parameters(), max_norm=1.0)
+        optimizer.step()
+    
+        if i % 100 == 0:
+            print('Training progress: {}/{}'.format(i, n_iter - 1))
+            loss_history.append(loss.item())
+    
+    t_end = time.time()
+    print("Training took {:.2f} seconds.".format(t_end - t_start))
+    print("Number of NaN losses encountered: {}".format(n_nan))
+    
+    # Optionally, plot the log loss:
+    plt.figure(figsize=(6,4))
+    plt.plot(np.log(np.array(loss_history)), '*-')
+    plt.title('Log Training Loss')
+    plt.xlabel('Iteration (x100)')
+    plt.ylabel('Log Loss')
+    plt.show()
+    
+    return estimator, loss_history, n_nan
+
+def evaluate_conditional_density(estimator, x_val, B=None):
+    """
+    Evaluates the trained estimator at given x values.
+    
+    Parameters:
+        estimator (LearnCondDistn_kNN): The trained conditional density estimator.
+        x_val (float or list of float): The x value(s) at which to evaluate.
+        B (int, optional): If provided and B <= k, select B atoms from the k predicted ones.
+                           Otherwise, return all k atoms.
+    
+    Returns:
+        selected_atoms (np.ndarray or list of np.ndarray):
+            If x_val is a float, returns an array of predicted y values (atoms).
+            If x_val is a list, returns a list of such arrays, one for each x.
+    """
+    estimator.atomnet.eval()
+    with torch.no_grad():
+        # Check if x_val is a single value or a list and create the tensor accordingly
+        is_single_value = isinstance(x_val, (int, float))
+        if is_single_value:
+            # Create a tensor of shape (1, 1) for a single x value
+            x_tensor = torch.tensor([[x_val]], dtype=torch.float32, device=estimator.device)
+        else:
+            # Assuming x_val is a list of floats; create a tensor of shape (n, 1)
+            x_tensor = torch.tensor(x_val, dtype=torch.float32, device=estimator.device).unsqueeze(1)
+        
+        # Pass through the network
+        atoms_batch = estimator.atomnet(x_tensor).cpu().numpy()
+    
+    # If B is provided and less than the number of atoms (k), select B atoms from each prediction.
+    # This assumes that each prediction has the same number of atoms.
+    if B is not None and B < atoms_batch.shape[1]:
+        indices = np.linspace(0, atoms_batch.shape[1] - 1, B, dtype=int)
+        atoms_batch = atoms_batch[:, indices]
+    
+    # Return in the original format: a single array if input was a float, otherwise a list.
+    return atoms_batch[0] if is_single_value else list(atoms_batch)
+
+

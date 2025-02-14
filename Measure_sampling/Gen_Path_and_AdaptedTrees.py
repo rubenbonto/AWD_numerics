@@ -15,7 +15,7 @@ if kmeans_meas_path not in sys.path:
 # Now import modules after adding Trees to sys.path
 from Build_trees_from_paths import build_tree_from_paths
 
-from kmeans_meas import empirical_k_means_measure
+from AEM_kMeans import empirical_k_means_measure
 import time
 
 
@@ -46,9 +46,6 @@ def generate_brownian_motion(num_paths=3000, time_steps=4, scale=1, return_time=
         return sample_paths, end_time - start_time
     return sample_paths
 
-
-import numpy as np
-import time
 
 def generate_financial_model_paths(num_paths=3000, time_steps=4, scale=1, mean_reversion=0.1, volatility=0.2, drift=0.05, return_time=False):
     """
