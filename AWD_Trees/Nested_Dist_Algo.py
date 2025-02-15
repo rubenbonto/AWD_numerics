@@ -16,7 +16,7 @@ It supports three different inner optimal transport solvers:
 - Sinkhorn algorithm (Entropic regularization)
 """
 
-def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lambda_reg):
+def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lambda_reg, power):
     """
     Computes the nested optimal transport plan between two trees.
 
@@ -37,7 +37,7 @@ def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lam
         raise ValueError("Method must be one of 'Sinkhorn', 'solver_lp', or 'solver_pot'.")
     
     probability_matrices = {}
-    full_distance_matrix = compute_distance_matrix_at_depth(tree1_root, tree2_root, max_depth)
+    full_distance_matrix = compute_distance_matrix_at_depth(tree1_root, tree2_root, max_depth, power)
     
     for depth in range(max_depth - 1, -1, -1):
         paths_tree1 = get_nodes_at_depth(tree1_root, depth)
@@ -118,7 +118,7 @@ def compute_final_probability_matrix(probability_matrices, tree1_root, tree2_roo
             final_prob_matrix[i, j] = probability
     return final_prob_matrix
 
-def compute_nested_distance(tree1_root, tree2_root, max_depth, return_matrix=False, method="solver_lp", lambda_reg=0):
+def compute_nested_distance(tree1_root, tree2_root, max_depth, return_matrix=False, method="solver_lp", lambda_reg=0, power = 1):
     """
     Computes the nested Wasserstein distance between two trees.
 
@@ -134,7 +134,7 @@ def compute_nested_distance(tree1_root, tree2_root, max_depth, return_matrix=Fal
     - float: Computed nested distance.
     - np.ndarray (optional): Final probability matrix if return_matrix is True.
     """
-    distance, probability_matrices = nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lambda_reg)
+    distance, probability_matrices = nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lambda_reg, power)
     
     if return_matrix:
         final_prob_matrix = compute_final_probability_matrix(probability_matrices, tree1_root, tree2_root, max_depth)

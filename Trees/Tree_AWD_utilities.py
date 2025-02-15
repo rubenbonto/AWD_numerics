@@ -17,7 +17,7 @@ def get_nodes_at_depth(tree_root, depth):
     return nodes
 
 
-def compute_distance_matrix_at_depth(tree_1_root, tree_2_root, depth):
+def compute_distance_matrix_at_depth(tree_1_root, tree_2_root, depth, power):
     """Compute the distance matrix up to a specific depth."""
     nodes_at_depth_tree1 = get_nodes_at_depth(tree_1_root, depth)
     nodes_at_depth_tree2 = get_nodes_at_depth(tree_2_root, depth)
@@ -31,7 +31,7 @@ def compute_distance_matrix_at_depth(tree_1_root, tree_2_root, depth):
             max_len = max(len(path1), len(path2))
             padded_path1 = path1 + [0] * (max_len - len(path1))
             padded_path2 = path2 + [0] * (max_len - len(path2))
-            distance = sum(abs(a - b) for a, b in zip(padded_path1, padded_path2))
+            distance = sum(abs(a - b)**power for a, b in zip(padded_path1, padded_path2))
             distance_matrix[i, j] = distance
 
     return distance_matrix
