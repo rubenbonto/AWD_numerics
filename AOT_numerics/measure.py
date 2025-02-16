@@ -63,6 +63,7 @@ def get_meas_for_sinkhorn(mu, supp_mu, t_max, markov=1):
     return x_list, mu_list
 
 
+
 def get_full_index_markov(mu_list):
     """
     should return a list of the same length as mu_list, where each entry represents the support of mu_{1:t} in the

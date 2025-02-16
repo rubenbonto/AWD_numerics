@@ -388,16 +388,6 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
         return objective_val, [[pi_var[i, j].x for j in range(n2)] for i in range(n1)]
 
 
-# FUNCTIONS FOR CAUSAL AND BICAUSAL VERSION OF SINKHORN'S ALGORITHM
-"""
-Only implemented for Markovian measures so far.
-We will use a slightly different representation of measures which makes it easier to comprehend the steps in the
-causal and bicausal version of Sinkhorn's algorithm, as given by the function get_meas_for_sinkhorn in src/measures.py
-For the causal version, various lists tracking indexes of measures must be supplied, which are outputs from the
-functions get_full_index_markov and get_start_next_indices in src/measures.py
-"""
-
-
 def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_stop=10**-4, max_iter=10**4,
                              reshape=True, outputflag=0):
     # Only for MARKOV - MARKOV marginals, bicausal!
@@ -426,7 +416,7 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         f_h = [[np.ones([len(mu_list[t][i][1]), 1]) for j in range(m_list[t-1])] for i in range(n_list[t-1])]
         g_h = [[np.ones([1, len(nu_list[t][j][1])]) for j in range(m_list[t-1])] for i in range(n_list[t-1])]
         c_f_h = [[1 for j in range(m_list[t-1])] for i in range(n_list[t-1])]
-        c_g_h = [[1 for j in range(m_list[t - 1])] for i in range(n_list[t - 1])]
+        c_g_h = [[1 for j in range(m_list[t-1])] for i in range(n_list[t-1])]
         f_list.append(f_h)
         g_list.append(g_h)
         const_f_list.append(c_f_h)
@@ -579,11 +569,15 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         elif t > 0:
             for i in range(n_list[t-1]):
                 for j in range(m_list[t-1]):
-                    V_t[i, j] = np.sum((-np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]) + V_tp[mu_list[t][i][0], :][:, nu_list[t][j][0]]) * f_list[t][i][j] * g_list[t][i][j] * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]] * const_g_list[t+1][mu_list[t][i][0], :][:, nu_list[t][j][0]] * (1./const_g_list[t]) * mu_list[t][i][1] * nu_list[t][j][1])
+                    V_t[i, j] = np.sum((-np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]) + V_tp[mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                                       * f_list[t][i][j] * g_list[t][i][j] * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]] *
+                                       const_g_list[t+1][mu_list[t][i][0], :][:, nu_list[t][j][0]] * (1./const_g_list[t][i, j]) * mu_list[t][i][1] * nu_list[t][j][1])
         else:
             value = np.sum((-np.log(cost_list[0][mu_list[0][0], :][:, nu_list[0][0]]) + V_tp[mu_list[t][0], :][:, nu_list[t][0]]) * f_list[0] * g_list[0] * cost_list[0][mu_list[0][0], :][:, nu_list[0][0]] * const_g_list[t+1][mu_list[t][0], :][:, nu_list[t][0]] * mu_list[0][1] * nu_list[0][1])
         V_tp = V_t.copy()
     return value
+    # return 0.0
+
 
 
 def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index_full, nu_next_list, nu_probs_tm1, eps_stop=10**-4, max_iter=10**4, outputflag=0, reshape=1):

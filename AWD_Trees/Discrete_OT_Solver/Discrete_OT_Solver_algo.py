@@ -1,6 +1,7 @@
 from scipy.optimize import linprog
 import ot
 import numpy as np
+from scipy.special import logsumexp
 
 """
 This module provides multiple methods to solve discrete optimal transport (OT) problems.
@@ -68,31 +69,39 @@ def solver_lp(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
     
     return result.x.reshape(num_rows, num_cols)
 
-def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg):
+def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg, max_iterations=1000):
     """
-    Performs Sinkhorn iterations to compute the optimal transport plan.
-
+    Performs a stabilized Sinkhorn iteration in the log domain to compute the optimal transport plan.
+    
     Parameters:
-    - distance_matrix (np.ndarray): Cost matrix.
-    - p1 (np.ndarray): Source distribution.
-    - p2 (np.ndarray): Target distribution.
+    - distance_matrix (np.ndarray): Cost matrix (assumed nonnegative).
+    - p1 (np.ndarray): Source probability distribution (should sum to 1).
+    - p2 (np.ndarray): Target probability distribution (should sum to 1).
     - stopping_criterion (float): Convergence threshold.
     - lambda_reg (float): Regularization parameter.
-
+    - max_iterations (int): Maximum number of iterations.
+    
     Returns:
     - np.ndarray: Optimal transport plan matrix.
     """
-    K = np.exp(-lambda_reg * distance_matrix)
+    # Compute logK to avoid direct exponentiation of extreme values
+    logK = -lambda_reg * distance_matrix
     n1, n2 = distance_matrix.shape
-    beta, gamma = np.ones(n1), np.ones(n2)
-    max_iterations, epsilon = 400, 1e-5
+
+    # Initialize dual variables in the log domain (u and v correspond to log(beta) and log(gamma))
+    u = np.zeros(n1)
+    v = np.zeros(n2)
     
-    for _ in range(max_iterations):
-        beta_prev, gamma_prev = beta.copy(), gamma.copy()
-        beta = p1 / np.sum(K * gamma, axis=1)
-        gamma = p2 / np.sum(K.T * beta, axis=1)
+    for iteration in range(max_iterations):
+        u_prev = u.copy()
+        # Update u using the log-sum-exp trick to avoid numerical issues
+        u = np.log(p1) - logsumexp(logK + v[None, :], axis=1)
+        v = np.log(p2) - logsumexp(logK.T + u[None, :], axis=1)
         
-        if np.sum(np.abs(beta - beta_prev)) + np.sum(np.abs(gamma - gamma_prev)) < stopping_criterion:
+        # Convergence check: if the change in u is below the threshold, we break
+        if np.sum(np.abs(u - u_prev)) < stopping_criterion:
             break
     
-    return np.outer(beta, gamma) * K
+    # Recover the optimal transport plan using the dual variables
+    transport_plan = np.exp(u[:, None] + v[None, :] + logK)
+    return transport_plan
