@@ -30,6 +30,9 @@ def solver_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
     if not np.isclose(np.sum(pi_ratios), np.sum(pi_tilde_ratios)):
         raise ValueError("The total mass of the source and target distributions must be equal.")
     
+    pi_ratios = np.array(pi_ratios, dtype=np.float64)
+    pi_tilde_ratios = np.array(pi_tilde_ratios, dtype=np.float64)
+    
     return ot.emd(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
 
 def solver_lp(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
@@ -44,30 +47,22 @@ def solver_lp(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
     Returns:
     - np.ndarray: Optimal transport probability matrix.
     """
-    num_rows, num_cols = distance_matrix_subset.shape
+    n, m = distance_matrix_subset.shape
     c = distance_matrix_subset.flatten()
-    A_eq, b_eq = [], []
-    
+
     # Row constraints
-    for i in range(num_rows):
-        row_constraint = [0] * (num_rows * num_cols)
-        for j in range(num_cols):
-            row_constraint[i * num_cols + j] = 1
-        A_eq.append(row_constraint)
-        b_eq.append(pi_ratios[i])
-    
-    # Column constraints
-    for j in range(num_cols):
-        col_constraint = [0] * (num_rows * num_cols)
-        for i in range(num_rows):
-            col_constraint[i * num_cols + j] = 1
-        A_eq.append(col_constraint)
-        b_eq.append(pi_tilde_ratios[j])
-    
-    bounds = [(0, None)] * (num_rows * num_cols)
-    result = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
-    
-    return result.x.reshape(num_rows, num_cols)
+    A_eq = np.zeros((n + m, n * m))
+    b_eq = np.concatenate([pi_ratios, pi_tilde_ratios])
+
+    for i in range(n):  # Row constraints
+        A_eq[i, i * m:(i + 1) * m] = 1
+
+    for j in range(m):  # Column constraints
+        A_eq[n + j, j::m] = 1
+
+    res = linprog(c, A_eq=A_eq, b_eq=b_eq, method="highs")
+
+    return res.x.reshape(n, m) if res.success else None
 
 def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg, max_iterations=1000):
     """
@@ -105,3 +100,76 @@ def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg, 
     # Recover the optimal transport plan using the dual variables
     transport_plan = np.exp(u[:, None] + v[None, :] + logK)
     return transport_plan
+
+def solver_lp_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios, reg=1e-2):
+    """
+    Solve OT using stabilized Sinkhorn to prevent numerical issues.
+    """
+    pi_ratios = np.array(pi_ratios, dtype=np.float64)
+    pi_tilde_ratios = np.array(pi_tilde_ratios, dtype=np.float64)
+
+    return ot.lp.emd(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
+
+import jax.numpy as jnp
+from ott.geometry import geometry  # Correct module for defining cost matrices
+from ott.problems.linear import linear_problem
+from ott.solvers.linear import sinkhorn
+
+"""
+I attempted to speed up the computation using JAX, but it did not yield significant improvements. 
+I also experimented with parallelization, but the results were not satisfactory. 
+However, if you have access to a CUDA-compatible GPU, these computations could be significantly accelerated.
+"""
+def solver_jax(distance_matrix_np, p1_np, p2_np, epsilon, threshold = 1e-4):
+    """
+    Computes the entropically regularized optimal transport plan using OTT's Sinkhorn solver,
+    with a precomputed distance matrix.
+    
+    Parameters:
+      p1_np (np.ndarray): Source probability distribution (1D, sums to 1), shape (n,).
+      p2_np (np.ndarray): Target probability distribution (1D, sums to 1), shape (m,).
+      distance_matrix_np (np.ndarray): Cost matrix of shape (n, m).
+      epsilon (float): Entropic regularization parameter.
+      threshold (float): Convergence threshold.
+      
+    Returns:
+      np.ndarray: Optimal transport plan matrix of shape (n, m).
+    """
+    # Convert inputs from NumPy to JAX arrays.
+
+    p1_np = np.array(p1_np, dtype=np.float64)
+    p2_np = np.array(p2_np, dtype=np.float64)
+    distance_matrix_np = np.array(distance_matrix_np, dtype=np.float64)
+
+    p1_np /= np.sum(p1_np)
+    p2_np /= np.sum(p2_np)
+
+    distance_matrix_np /= np.max(distance_matrix_np)
+
+
+    p1 = jnp.array(p1_np)
+    p2 = jnp.array(p2_np)
+    cost_mat = jnp.array(distance_matrix_np)
+    
+    # Create geometry using the precomputed cost matrix.
+    geom = geometry.Geometry(cost_matrix=cost_mat, epsilon=epsilon)
+    
+    # Set up the linear problem with the given marginals.
+    prob = linear_problem.LinearProblem(geom, a=p1, b=p2)
+    
+    # Create the Sinkhorn solver instance.
+    solver = sinkhorn.Sinkhorn(
+        threshold=threshold,
+        max_iterations=1000,
+        norm_error=2,
+        lse_mode=True,
+    )
+    
+    # Solve the OT problem.
+    out = solver(prob)
+    
+    # Extract the transport plan.
+    transport_plan = out.matrix  # Correct way to extract the transport matrix
+    
+    # Convert the transport plan back to a NumPy array.
+    return np.array(transport_plan)

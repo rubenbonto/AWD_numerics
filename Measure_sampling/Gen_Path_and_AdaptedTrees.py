@@ -15,12 +15,13 @@ if kmeans_meas_path not in sys.path:
 # Now import modules after adding Trees to sys.path
 from Build_trees_from_paths import build_tree_from_paths
 
-from AEM_kMeans import empirical_k_means_measure
+from AEM_kMeans import empirical_k_means_measure, empirical_k_means_measure_new, empirical_k_means_measure_grid
+from AEM_grid import empirical_grid_measure
 import time
 
 
 
-def generate_brownian_motion(num_paths=3000, time_steps=4, scale=1, return_time=False):
+def generate_brownian_motion(num_paths=3000, time_steps=4, x_init = 0, scale=1, return_time=False):
     """
     Generates sample paths of Brownian motion.
 
@@ -37,7 +38,7 @@ def generate_brownian_motion(num_paths=3000, time_steps=4, scale=1, return_time=
     start_time = time.time()
     sample_paths = np.zeros((num_paths, time_steps))
     for i in range(num_paths):
-        sample_paths[i, 0] = 0  # Initial point
+        sample_paths[i, 0] = x_init  # Initial point
         for t in range(1, time_steps):
             sample_paths[i, t] = np.random.normal(loc=sample_paths[i, t-1], scale=scale)
     end_time = time.time()
@@ -85,17 +86,21 @@ def generate_financial_model_paths(num_paths=3000, time_steps=4, scale=1, mean_r
     return sample_paths
 
 
-def generate_adapted_tree(num_paths=3000, time_steps=4, scale=1, use_weights=1, model='brownian', return_times=False):
+def generate_adapted_tree(num_paths=3000, time_steps=4, x_init=0, scale=1, use_weights=1, 
+                          model='brownian', return_times=False, cluster_method='kmeans', N=None):
     """
     Generates an adapted tree from sample paths based on the selected stochastic model.
 
     Parameters:
     - num_paths (int): Number of sample paths.
     - time_steps (int): Number of time steps per path.
+    - x_init (float): Initial value for sample paths.
     - scale (float): Scaling factor for the standard deviation.
     - use_weights (int): Whether to use weights in the clustering step.
     - model (str): Choice between 'brownian' and 'financial'.
     - return_times (bool): Whether to return timing details.
+    - cluster_method (str): Clustering method to use ('kmeans' or 'grid').
+    - N (int): Number of grid points for the grid method. If None, defaults to int(round(sqrt(num_paths))).
 
     Returns:
     - TreeNode: Root node of the generated tree.
@@ -104,7 +109,7 @@ def generate_adapted_tree(num_paths=3000, time_steps=4, scale=1, use_weights=1, 
     # Generate sample paths based on the selected model
     start_sample_time = time.time()
     if model == 'brownian':
-        sample_paths, sample_time = generate_brownian_motion(num_paths, time_steps, scale, return_time=True)
+        sample_paths, sample_time = generate_brownian_motion(num_paths, time_steps, x_init, scale, return_time=True)
     elif model == 'financial':
         sample_paths, sample_time = generate_financial_model_paths(num_paths, time_steps, scale, return_time=True)
     else:
@@ -113,7 +118,18 @@ def generate_adapted_tree(num_paths=3000, time_steps=4, scale=1, use_weights=1, 
     
     # Adapt the measure
     start_adapt_time = time.time()
-    new_sample_paths, new_weights = empirical_k_means_measure(sample_paths, use_weights=use_weights)
+    if cluster_method == 'kmeans':
+        new_sample_paths, new_weights = empirical_k_means_measure(sample_paths, use_weights=use_weights)
+    elif cluster_method == 'kmeans_new':
+        new_sample_paths, new_weights = empirical_k_means_measure_new(sample_paths, use_weights=use_weights)
+    elif cluster_method == 'kmeans_grid':
+        new_sample_paths, new_weights = empirical_k_means_measure_grid(sample_paths, use_weights=use_weights)
+    elif cluster_method == 'grid':
+        if N is None:
+            N = int(np.round(np.sqrt(num_paths)))
+        new_sample_paths, new_weights = empirical_grid_measure(sample_paths, N=N, use_weights=use_weights)
+    else:
+        raise ValueError("Invalid cluster method. Choose either 'kmeans' or 'grid'.")
     end_adapt_time = time.time()
     adapt_time = end_adapt_time - start_adapt_time
     

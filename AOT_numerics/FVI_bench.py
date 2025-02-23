@@ -1,24 +1,27 @@
 import numpy as np
 from time import time
-
-# For Windows users to solve the memory leak warning from Kmeans due to MKL
 import os
 from sklearn.cluster import KMeans
-import numpy as np
 from gurobipy import *
 import ot
-
-import numpy as np
-from sklearn.cluster import KMeans
 from itertools import product
 from collections import defaultdict
-
-import numpy as np
 from normal_ot import *
-from gurobipy import *
-from time import time
 from measure import *
 from mainfunctions import *
+
+"""
+This script implements is to reproduce result in:
+
+"Fitted Value Iteration Methods for Bicausal Optimal Transport"
+by Erhan Bayraktar and Bingyan Han (2023).
+
+Reference: https://arxiv.org/abs/2306.12658
+
+The original code is sourced from: https://github.com/hanbingyan/FVIOT
+
+The goal is to set up measures to reproduce the numerical experiments conducted in the paper.
+"""
 
 def rand_tree_binom(T, init, vol, N_leaf=2, in_size=100):
     # Trying to implement the method in Chapter 5 from https://arxiv.org/pdf/2102.05413.pdf

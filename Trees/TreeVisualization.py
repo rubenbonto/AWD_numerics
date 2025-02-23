@@ -91,3 +91,128 @@ def find_node_by_value(node, value):
         if result:
             return result
     return None
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import deque
+from scipy.stats import gaussian_kde
+
+def gather_paths(root):
+    """
+    Gathers all root-to-leaf paths in the tree along with the product
+    of transition probabilities for each path.
+
+    Returns:
+        A list of tuples (values_list, path_probability), where:
+         - values_list is the list of node.values from root to leaf
+         - path_probability is the product of the probabilities along that path
+    """
+    stack = [(root, [root.value], 1.0)]
+    paths = []
+
+    while stack:
+        node, path_values, path_prob = stack.pop()
+        # If the node has no children, it's a leaf -> store the path
+        if not node.children:
+            paths.append((path_values, path_prob))
+        else:
+            for (child, p) in node.children:
+                stack.append((child,
+                              path_values + [child.value],
+                              path_prob * p))
+    return paths
+
+def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
+    """
+    Plots a 'fan' or 'scenario tree' style visualization:
+      - On the left: lines of state vs. stage/time for each root-to-leaf path.
+      - On the right: a distribution (histogram or kernel density) of the leaf states.
+
+    Parameters:
+    - tree_root (TreeNode): The root of the tree to visualize.
+    - fig_size (tuple): Figure size in inches, e.g. (12, 6).
+    - title (str): Title of the entire figure.
+    """
+
+    # 1) Gather all paths (root -> leaf)
+    paths = gather_paths(tree_root)
+    # Each element of `paths` is (list_of_values, probability_of_path)
+
+    # 2) Determine the maximum depth (for x-axis on the left plot)
+    max_depth = max(len(p[0]) for p in paths)  # largest path length
+
+    # 3) Prepare the figure with two subplots:
+    #    - left: scenario paths
+    #    - right: final distribution
+    fig, (ax_left, ax_right) = plt.subplots(
+        1, 2, figsize=fig_size, gridspec_kw={'width_ratios': [3, 1]}, sharey=True
+    )
+
+    fig.suptitle(title, fontsize=14)
+
+    # 4) Plot each path in the left subplot
+    for path_values, path_prob in paths:
+        # x-coords = stage indices (0 to len(path_values)-1)
+        x_coords = np.arange(len(path_values))
+        ax_left.plot(x_coords, path_values, linewidth=1.0, alpha=0.7)
+
+    ax_left.set_xlabel("Stage / Time")
+    ax_left.set_ylabel("State")
+    ax_left.set_title("States over time")
+
+    # 5) Collect final states + their probabilities
+    leaf_values = [pv[-1] for (pv, _) in paths]
+    leaf_probs = [pr for (_, pr) in paths]
+
+    # 6a) Option A: Weighted histogram on the right subplot
+    #    (orientation='horizontal' so that y is the state axis)
+    # ax_right.hist(leaf_values, bins=30, orientation='horizontal',
+    #               weights=leaf_probs, alpha=0.6, color='blue')
+    # ax_right.set_title("Distribution of Final States")
+
+    # 6b) Option B: Kernel density estimate of final states (weighted)
+    y_min = min(leaf_values)
+    y_max = max(leaf_values)
+    # Some padding in y-limits
+    y_pad = 0.05 * (y_max - y_min if y_max != y_min else 1)
+    y_grid = np.linspace(y_min - y_pad, y_max + y_pad, 500)
+
+    # Use gaussian_kde with weights:
+    kde = gaussian_kde(leaf_values, weights=leaf_probs)
+    pdf = kde(y_grid)  # evaluate density on the grid
+
+    ax_right.plot(pdf, y_grid, color='blue')
+    ax_right.fill_betweenx(y_grid, 0, pdf, color='blue', alpha=0.2)
+    ax_right.set_title("Final State Distribution")
+    ax_right.set_xlabel("Density")
+    # Mirror the y-limits of the left axis
+    ax_right.set_xlim(left=0, right=1.1 * pdf.max())
+
+    # 7) Clean up / show
+    plt.tight_layout()
+    plt.show()
+
+# ---------------------------------------------------------------------
+# Example Usage (you can remove or adjust this part in your code)
+if __name__ == "__main__":
+    # Construct a small example tree
+    root = TreeNode(0.0)
+    c1 = TreeNode(2.0)
+    c2 = TreeNode(-1.0)
+    root.add_child(c1, 0.5)
+    root.add_child(c2, 0.5)
+
+    c1_1 = TreeNode(3.0)
+    c1_2 = TreeNode(1.0)
+    c1.add_child(c1_1, 0.7)
+    c1.add_child(c1_2, 0.3)
+
+    c2_1 = TreeNode(-2.0)
+    c2_2 = TreeNode(0.5)
+    c2.add_child(c2_1, 0.4)
+    c2.add_child(c2_2, 0.6)
+
+    # Visualize
+    visualize_big_tree(root, fig_size=(12,6), title="Example Big Tree")

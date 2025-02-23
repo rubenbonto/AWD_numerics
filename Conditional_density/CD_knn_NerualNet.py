@@ -427,7 +427,7 @@ def compute_loss_sinkhorn_rbsp(
 
     return loss
 
-def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_batch=100, lr=1e-3, nns_type=' '):
+def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_batch=100, lr=1e-3, nns_type=' ', Lip = False):
     """
     Trains a conditional density estimator using LearnCondDistn_kNN.
     
@@ -450,8 +450,11 @@ def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_ba
     estimator = LearnCondDistn_kNN(d_X=d_X, d_Y=d_Y, data_tensor=data_tensor)
     
     # Initialize the network (using the standard version here)
-    estimator.init_net_std(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
-    
+    if Lip == False:
+        estimator.init_net_std(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
+    else:
+        print(44)
+        estimator.init_net_lip(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
     optimizer = optim.Adam(estimator.atomnet.parameters(), lr=lr)
     loss_history = []
     n_nan = 0

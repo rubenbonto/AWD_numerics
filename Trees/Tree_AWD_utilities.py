@@ -16,24 +16,42 @@ def get_nodes_at_depth(tree_root, depth):
     traverse(tree_root, [], 0)
     return nodes
 
+def pad_paths(paths, pad_value=0):
+    """Pad all paths to the same length."""
+    max_length = max(len(path) for path in paths)
+    padded = np.array([path + [pad_value]*(max_length - len(path)) for path in paths])
+    return padded
 
 def compute_distance_matrix_at_depth(tree_1_root, tree_2_root, depth, power):
-    """Compute the distance matrix up to a specific depth."""
+    """
+    Compute the distance matrix using vectorized NumPy operations.
+    
+    Parameters:
+      tree_1_root: The root of the first tree.
+      tree_2_root: The root of the second tree.
+      depth: The depth at which to extract nodes.
+      power: The power to which differences are raised.
+      
+    Returns:
+      A NumPy array with the computed distance matrix.
+    """
+    # Assume get_nodes_at_depth is defined elsewhere
     nodes_at_depth_tree1 = get_nodes_at_depth(tree_1_root, depth)
     nodes_at_depth_tree2 = get_nodes_at_depth(tree_2_root, depth)
 
-    num_nodes_tree1 = len(nodes_at_depth_tree1)
-    num_nodes_tree2 = len(nodes_at_depth_tree2)
-    distance_matrix = np.zeros((num_nodes_tree1, num_nodes_tree2))
+    # Pad all paths to the same length for each tree
+    arr1 = pad_paths(nodes_at_depth_tree1)  # shape: (m, L)
+    arr2 = pad_paths(nodes_at_depth_tree2)  # shape: (n, L)
 
-    for i, path1 in enumerate(nodes_at_depth_tree1):
-        for j, path2 in enumerate(nodes_at_depth_tree2):
-            max_len = max(len(path1), len(path2))
-            padded_path1 = path1 + [0] * (max_len - len(path1))
-            padded_path2 = path2 + [0] * (max_len - len(path2))
-            distance = sum(abs(a - b)**power for a, b in zip(padded_path1, padded_path2))
-            distance_matrix[i, j] = distance
-
+    # Use broadcasting to compute absolute differences
+    # Expand dimensions so that:
+    #   arr1 becomes shape (m, 1, L)
+    #   arr2 becomes shape (1, n, L)
+    # Their difference results in shape (m, n, L)
+    diff = np.abs(arr1[:, None, :] - arr2[None, :, :]) ** power
+    
+    # Sum over the last axis (L) to get the final distance matrix of shape (m, n)
+    distance_matrix = diff.sum(axis=2)
     return distance_matrix
 
 
