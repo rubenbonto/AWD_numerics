@@ -48,6 +48,8 @@ def generate_brownian_motion(num_paths=3000, time_steps=4, x_init = 0, scale=1, 
     return sample_paths
 
 
+
+#### NOT USED AS NO IDEA WHAT'S THE REAL DISTANCE COMPARED TO WHAT WE ESTIMATE
 def generate_financial_model_paths(num_paths=3000, time_steps=4, scale=1, mean_reversion=0.1, volatility=0.2, drift=0.05, return_time=False):
     """
     Generates sample paths from a financial model based on a mean-reverting stochastic process.
@@ -86,6 +88,9 @@ def generate_financial_model_paths(num_paths=3000, time_steps=4, scale=1, mean_r
     return sample_paths
 
 
+
+
+#### SAMPLE PATHS AND GENERATE AND "ADAPTED" MEASURE FROM IT AND FINALLY CREAT A TREE FROM THIS MEASURE
 def generate_adapted_tree(num_paths=3000, time_steps=4, x_init=0, scale=1, use_weights=1, 
                           model='brownian', return_times=False, cluster_method='kmeans', N=None):
     """

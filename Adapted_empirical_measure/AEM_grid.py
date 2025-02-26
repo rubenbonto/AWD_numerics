@@ -2,7 +2,7 @@ import numpy as np
 
 
 
-# replicate the grid as done in: Estimating Processes in Adapted Wasserstein Distance but not with T+1 but with sqrt n
+# replicate the grid as done in: Estimating Processes in Adapted Wasserstein Distance but not with T+1 but with sqrt n!
 def empirical_grid_measure(data, N=None, use_weights=False):
     """
     Computes an empirical measure approximation of sample paths using grid quantization.
@@ -24,17 +24,17 @@ def empirical_grid_measure(data, N=None, use_weights=False):
     if N is None:
         N = int(np.round(np.sqrt(num_samples)))
     
-    # Compute global min and max over the entire dataset
+    # Compute global min and max over the entire dataset (maybe I can try to optimize grid point a bit more)
     global_min = data.min()
     global_max = data.max()
     
     # Create a common grid for all time steps
     grid = np.linspace(global_min, global_max, N)
     
-    # For each value in the data, find the closest grid point using broadcasting
+    # For each value in the data, find the closest grid point
     quantized_data = grid[np.abs(data[..., None] - grid).argmin(axis=-1)]
     
-    # Restore the first time step to its original value (it remains unchanged)
+    # Restore the first time step to its original value!
     quantized_data[:, 0] = data[:, 0]
     
     if not use_weights:
@@ -45,6 +45,13 @@ def empirical_grid_measure(data, N=None, use_weights=False):
                                               return_inverse=True, return_counts=True)
     weights = counts / num_samples
     return unique_paths, weights
+
+
+########################################################################################
+########################################################################################
+# Below are old version I keep just in case
+########################################################################################
+########################################################################################
 
 # the issue bellow is that it modify the first value which is something we do no want
 def empirical_grid_measure_old_old(data, N=None, use_weights=False):

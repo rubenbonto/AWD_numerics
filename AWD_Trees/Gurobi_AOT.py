@@ -10,8 +10,6 @@ Eckstein, S., & Pammer, G. (2023). "Computational methods for adapted optimal tr
 
 Unlike nested optimal transport methods, this implementation does NOT solve the problem via
 backward induction but instead formulates and solves a large LP problem directly.
-It can handle causal and anticausal constraints and is particularly useful when dealing with
-weighted sample paths.
 """
 
 def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0, outputflag=1, causal=0, anticausal=0):

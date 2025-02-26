@@ -2,6 +2,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from config import *
 
+
+#### Copy paster from https://github.com/hanbingyan/FVIOT.
+
 h = 8
 class DQN(nn.Module):
     def __init__(self, x_dim, y_dim, T):

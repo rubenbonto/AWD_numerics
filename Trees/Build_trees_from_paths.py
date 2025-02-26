@@ -1,6 +1,5 @@
 from Tree_Node import TreeNode
 
-
 def build_tree_from_paths(sample_paths, weights):
     """
     Builds a weighted tree from sample paths.

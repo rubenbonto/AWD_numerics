@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import networkx as nx
-from collections import defaultdict
-from Tree_Node import TreeNode
+from collections import defaultdicts
+import numpy as np
+from scipy.stats import gaussian_kde
+
+
 
 def visualize_tree(tree_root, title="Tree Visualization"):
     """
@@ -94,10 +97,12 @@ def find_node_by_value(node, value):
 
 
 
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import deque
-from scipy.stats import gaussian_kde
+
+
+
+
+
+#### for big trees!!
 
 def gather_paths(root):
     """
@@ -123,6 +128,9 @@ def gather_paths(root):
                               path_values + [child.value],
                               path_prob * p))
     return paths
+
+
+
 
 def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
     """
@@ -193,26 +201,3 @@ def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
     # 7) Clean up / show
     plt.tight_layout()
     plt.show()
-
-# ---------------------------------------------------------------------
-# Example Usage (you can remove or adjust this part in your code)
-if __name__ == "__main__":
-    # Construct a small example tree
-    root = TreeNode(0.0)
-    c1 = TreeNode(2.0)
-    c2 = TreeNode(-1.0)
-    root.add_child(c1, 0.5)
-    root.add_child(c2, 0.5)
-
-    c1_1 = TreeNode(3.0)
-    c1_2 = TreeNode(1.0)
-    c1.add_child(c1_1, 0.7)
-    c1.add_child(c1_2, 0.3)
-
-    c2_1 = TreeNode(-2.0)
-    c2_2 = TreeNode(0.5)
-    c2.add_child(c2_1, 0.4)
-    c2.add_child(c2_2, 0.6)
-
-    # Visualize
-    visualize_big_tree(root, fig_size=(12,6), title="Example Big Tree")

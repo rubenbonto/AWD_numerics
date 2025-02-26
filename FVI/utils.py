@@ -2,6 +2,9 @@ from collections import namedtuple
 import torch.nn as nn
 from config import *
 
+
+#### Copy paster from https://github.com/hanbingyan/FVIOT.
+
 # def sinkhorn_knopp(mu, nu, C, reg, niter):
 #     K = np.exp(-C/C.max()/reg)
 #     u = np.ones((len(mu), ))

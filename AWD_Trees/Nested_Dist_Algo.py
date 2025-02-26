@@ -80,6 +80,8 @@ def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lam
     
     return full_distance_matrix[0][0], probability_matrices
 
+
+# DO NOT USE FOR BIG PROBLEMS
 def compute_final_probability_matrix(probability_matrices, tree1_root, tree2_root, max_depth):
     """
     Combines probability matrices along all paths to compute the final probability matrix.
@@ -121,6 +123,8 @@ def compute_final_probability_matrix(probability_matrices, tree1_root, tree2_roo
                 probability *= prob_matrix[index1, index2]
             final_prob_matrix[i, j] = probability
     return final_prob_matrix
+
+
 
 def compute_nested_distance(tree1_root, tree2_root, max_depth, return_matrix=False, method="solver_lp", lambda_reg=0, power = 1):
     """

@@ -9,12 +9,11 @@ Each function implements a different approach to compute the OT plan, typically 
 for solving sub-OT problems that occur in backward induction.
 
 Methods included:
-- `solver_pot`: Uses the Earth Mover's Distance (EMD) from the POT library.
+- `solver_pot` and `solver_lp_pot`: Uses the Earth Mover's Distance (EMD) from the POT library.
 - `solver_lp`: Uses linear programming (LP) to find the OT plan.
 - `Sinkhorn_iteration`: Implements the Sinkhorn algorithm for entropic regularized OT.
 """
 
-# This method is the fastest and most accurate among the three.
 def solver_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
     """
     Solve for the optimal transport plan using the POT library's EMD solver.
@@ -66,7 +65,7 @@ def solver_lp(distance_matrix_subset, pi_ratios, pi_tilde_ratios):
 
 def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg, max_iterations=1000):
     """
-    Performs a stabilized Sinkhorn iteration in the log domain to compute the optimal transport plan.
+    Performs a stabilized Sinkhorn iteration in the log domain (to avoid division by zero issues) to compute the optimal transport plan.
     
     Parameters:
     - distance_matrix (np.ndarray): Cost matrix (assumed nonnegative).
@@ -103,13 +102,24 @@ def Sinkhorn_iteration(distance_matrix, p1, p2, stopping_criterion, lambda_reg, 
 
 def solver_lp_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios, reg=1e-2):
     """
-    Solve OT using stabilized Sinkhorn to prevent numerical issues.
+    Solve for the optimal transport plan using the POT library's (fast!) EMD solver.
+
+    Parameters:
+    - distance_matrix_subset (np.ndarray): A 2D cost matrix.
+    - pi_ratios (np.ndarray): 1D source distribution (row marginals).
+    - pi_tilde_ratios (np.ndarray): 1D target distribution (column marginals).
+
+    Returns:
+    - np.ndarray: The optimal transport plan (probability matrix).
     """
     pi_ratios = np.array(pi_ratios, dtype=np.float64)
     pi_tilde_ratios = np.array(pi_tilde_ratios, dtype=np.float64)
 
     return ot.lp.emd(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
 
+
+
+# Some other technique I tried to be faster but failed
 import jax.numpy as jnp
 from ott.geometry import geometry  # Correct module for defining cost matrices
 from ott.problems.linear import linear_problem

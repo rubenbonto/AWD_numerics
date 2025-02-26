@@ -1,5 +1,9 @@
 import numpy as np
 
+
+# Function to transfer from "aot_numerics" framework to mine
+
+
 def extract_sample_paths(mu, T, init):
     """
     Extract full sample paths and their weights from a disintegrated measure.

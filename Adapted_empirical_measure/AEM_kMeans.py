@@ -18,7 +18,7 @@ Original implementation source: https://github.com/stephaneckstein/aotnumerics
 """
 
 
-## This is the original function I took from github
+# This is the original function I took from the above github
 def empirical_k_means_measure(data, use_klist=False, klist=(), tol_decimals=6, use_weights=False, heuristic=False):
     """
     Computes an empirical measure approximation of sample paths using k-means clustering.
@@ -81,11 +81,6 @@ def empirical_k_means_measure(data, use_klist=False, klist=(), tol_decimals=6, u
             output_weights.append(1 / num_samples)
     
     return output_samples, output_weights
-
-
-import numpy as np
-from sklearn.cluster import KMeans
-import math
 
 
 ## This is a function that try to simulate a grid with r as presented in: Estimating Processes in Adapted Wasserstein Distance but scaled by the spread
@@ -181,7 +176,7 @@ def empirical_k_means_measure_grid(data, tol_decimals=6, use_weights=False, heur
     return output_samples, output_weights
 
 
-## this is a function that for smaller spread values cluster into proportionnaly to the largest spread to which we assign sqrt(number of sample)
+# This is a function that for smaller spread values cluster into proportionnaly to the largest spread to which we assign sqrt(number of sample)
 def empirical_k_means_measure_new(data, tol_decimals=6, use_weights=False, heuristic=False):
     """
     Computes an empirical measure approximation of sample paths using k-means clustering.

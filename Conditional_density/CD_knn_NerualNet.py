@@ -427,7 +427,16 @@ def compute_loss_sinkhorn_rbsp(
 
     return loss
 
-def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_batch=100, lr=1e-3, nns_type=' ', Lip = False):
+
+
+
+##########################################################################
+# My part
+##########################################################################
+
+
+
+def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_batch=100, lr=1e-3, nns_type=' ', Lip = False, Print_res = False):
     """
     Trains a conditional density estimator using LearnCondDistn_kNN.
     
@@ -483,25 +492,32 @@ def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_ba
         # Apply gradient clipping to help stabilize training.
         torch.nn.utils.clip_grad_norm_(estimator.atomnet.parameters(), max_norm=1.0)
         optimizer.step()
-    
-        if i % 100 == 0:
-            print('Training progress: {}/{}'.format(i, n_iter - 1))
-            loss_history.append(loss.item())
+        if Print_res:
+            if i % 100 == 0:
+                print('Training progress: {}/{}'.format(i, n_iter - 1))
+                loss_history.append(loss.item())
     
     t_end = time.time()
     print("Training took {:.2f} seconds.".format(t_end - t_start))
     print("Number of NaN losses encountered: {}".format(n_nan))
+
     
-    # Optionally, plot the log loss:
-    plt.figure(figsize=(6,4))
-    plt.plot(np.log(np.array(loss_history)), '*-')
-    plt.title('Log Training Loss')
-    plt.xlabel('Iteration (x100)')
-    plt.ylabel('Log Loss')
-    plt.show()
+    if Print_res:
+        # Optionally, plot the log loss:
+        plt.figure(figsize=(6,4))
+        plt.plot(np.log(np.array(loss_history)), '*-')
+        plt.title('Log Training Loss')
+        plt.xlabel('Iteration (x100)')
+        plt.ylabel('Log Loss')
+        plt.show()
     
     return estimator, loss_history, n_nan
 
+
+
+
+
+# DO NOT USE (kept here just in case)
 def evaluate_conditional_density(estimator, x_val, B=None):
     """
     Evaluates the trained estimator at given x values.
