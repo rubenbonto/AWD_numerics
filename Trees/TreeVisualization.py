@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import networkx as nx
-from collections import defaultdicts
+from collections import defaultdict, deque
 import numpy as np
 from scipy.stats import gaussian_kde
 

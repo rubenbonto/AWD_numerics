@@ -462,7 +462,6 @@ def train_conditional_density(data_tensor, d_X=1, d_Y=1, k=55, n_iter=1500, n_ba
     if Lip == False:
         estimator.init_net_std(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
     else:
-        print(44)
         estimator.init_net_lip(n_atoms=k, n_layers=2*k, input_actvn=nn.ReLU(), hidden_actvn=nn.ReLU())
     optimizer = optim.Adam(estimator.atomnet.parameters(), lr=lr)
     loss_history = []

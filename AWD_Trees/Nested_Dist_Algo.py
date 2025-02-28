@@ -33,8 +33,8 @@ def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lam
     """
     if method == "Sinkhorn" and lambda_reg <= 0:
         raise ValueError("Lambda must be positive when using Sinkhorn iteration.")
-    elif method not in ("solver_lp", "solver_pot", "Sinkhorn", "solver_sinkhorn", "solver_lp_pot", "solver_jax"):
-        raise ValueError("Method must be one of 'Sinkhorn', 'solver_lp', 'solver_jax', 'solver_lp_pot' or 'solver_pot'.")
+    elif method not in ("solver_lp", "solver_pot", "Sinkhorn", "solver_sinkhorn", "solver_lp_pot","solver_pot_sinkhorn", "solver_jax"):
+        raise ValueError("Method must be one of 'Sinkhorn', 'solver_lp', 'solver_jax', 'solver_lp_pot', 'solver_pot_sinkhorn' or 'solver_pot'.")
     
     probability_matrices = {}
     full_distance_matrix = compute_distance_matrix_at_depth(tree1_root, tree2_root, max_depth, power)
@@ -69,6 +69,10 @@ def nested_optimal_transport_loop(tree1_root, tree2_root, max_depth, method, lam
                     probability_matrix = solver_lp(sub_matrix, pi_ratios, pi_tilde_ratios)
                 elif method == "solver_jax":
                     probability_matrix = solver_jax(sub_matrix, pi_ratios, pi_tilde_ratios, epsilon=(1/lambda_reg))
+                elif method == "solver_pot_sinkhorn":
+                    probability_matrix = solver_pot_sinkhorn(sub_matrix, pi_ratios, pi_tilde_ratios, epsilon=(1/lambda_reg))
+                elif method == "solver_pot_1D":
+                    probability_matrix = solver_pot_1D(sub_matrix, pi_ratios, pi_tilde_ratios)
                 else:
                     probability_matrix = solver_pot(sub_matrix, pi_ratios, pi_tilde_ratios)
                 
