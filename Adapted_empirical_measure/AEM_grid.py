@@ -2,7 +2,7 @@ import numpy as np
 
 
 
-# replicate the grid as done in: Estimating Processes in Adapted Wasserstein Distance but not with T+1 but with sqrt n!
+# replicate the grid as done in: Estimating Processes in Adapted Wasserstein Distance but not with T+1 but with sqrt n !
 def empirical_grid_measure(data, N=None, use_weights=False):
     """
     Computes an empirical measure approximation of sample paths using grid quantization.
@@ -45,6 +45,10 @@ def empirical_grid_measure(data, N=None, use_weights=False):
                                               return_inverse=True, return_counts=True)
     weights = counts / num_samples
     return unique_paths, weights
+
+
+
+
 
 
 ########################################################################################
