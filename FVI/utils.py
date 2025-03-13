@@ -15,7 +15,8 @@ from config import *
 #     return Pi
 
 
-Transition = namedtuple('Transition', ('time', 'x', 'y', 'value'))
+Transition = namedtuple("Transition", ("time", "x", "y", "value"))
+
 
 class Memory(object):
     def __init__(self, capacity):
@@ -56,8 +57,6 @@ def optimize_model(policy_net, memory, optimizer, Trunc_flag):
     y_batch = torch.stack([torch.tensor([y], dtype=torch.float32) for y in batch.y])
 
     time_batch = torch.stack([torch.tensor(t, dtype=torch.float32) for t in batch.time])
-
-
 
     left_values = policy_net(time_batch, x_batch, y_batch)
 

@@ -88,5 +88,13 @@ tree_1_root = build_tree_1()
 tree_2_root = build_tree_2()
 
 # Save trees
-save_tree(tree_1_root, '/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple', 'tree_1.pkl')
-save_tree(tree_2_root, '/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple', 'tree_2.pkl')
+save_tree(
+    tree_1_root,
+    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple",
+    "tree_1.pkl",
+)
+save_tree(
+    tree_2_root,
+    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple",
+    "tree_2.pkl",
+)

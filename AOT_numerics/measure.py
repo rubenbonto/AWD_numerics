@@ -43,7 +43,7 @@ def get_meas_for_sinkhorn(mu, supp_mu, t_max, markov=1):
 
     for t in range(1, t_max):
         mu_h = []
-        for ind_minus, x_minus in enumerate(x_list[t-1]):
+        for ind_minus, x_minus in enumerate(x_list[t - 1]):
             mut_s_pre = mu(t, [x_minus])[0].flatten()
             wt_pre = np.array(mu(t, [x_minus])[1])
             mut = []
@@ -63,7 +63,6 @@ def get_meas_for_sinkhorn(mu, supp_mu, t_max, markov=1):
     return x_list, mu_list
 
 
-
 def get_full_index_markov(mu_list):
     """
     should return a list of the same length as mu_list, where each entry represents the support of mu_{1:t} in the
@@ -73,7 +72,9 @@ def get_full_index_markov(mu_list):
     support points of mu_{1:t}
     """
     if len(mu_list) == 1:
-        return [[[mu_list[0][0][i], mu_list[0][0][i]] for i in range(len(mu_list[0][0]))]]
+        return [
+            [[mu_list[0][0][i], mu_list[0][0][i]] for i in range(len(mu_list[0][0]))]
+        ]
     else:
         glprev_full = get_full_index_markov(mu_list[:-1])
         glprev = glprev_full[-1]
@@ -108,7 +109,7 @@ def get_start_next_indices(gl_out):
             if i_cur[-3] > i_prev_cur:
                 out_h.append(i_cur[-1])
                 i_prev_cur = i_cur[-3]
-        out_h.append(i_h[-1][-1]+1)
+        out_h.append(i_h[-1][-1] + 1)
         out_next_l.append(out_h)
     return out_next_l
 
@@ -118,9 +119,9 @@ def get_joint_prob(nu_list, nu_index_full, t_ind):
     out_prob = []
     for i_full in ih:
         p_here = nu_list[0][1][i_full[0]]
-        for t in range(1, t_ind+1):
-            ind = nu_list[t][i_full[2 * (t - 1)]][0].index(i_full[2*t])
-            p_here *= nu_list[t][i_full[2*(t-1)]][1][ind]
+        for t in range(1, t_ind + 1):
+            ind = nu_list[t][i_full[2 * (t - 1)]][0].index(i_full[2 * t])
+            p_here *= nu_list[t][i_full[2 * (t - 1)]][1][ind]
         out_prob.append(p_here)
     return out_prob
 
@@ -129,7 +130,9 @@ def get_joint_prob(nu_list, nu_index_full, t_ind):
 # Basically implements the methodology of Backhoff et al "Estimating processes in adapted Wasserstein distance"
 # However, instead of the fixed grid based approach therein, we use K-Means to cluster the points together, which is
 # more flexible with respect to varying orders of magnitude etc
-def empirical_k_means_measure(data, use_klist=0, klist=(), tol_decimals=6, use_weights=0, heuristic=0):
+def empirical_k_means_measure(
+    data, use_klist=0, klist=(), tol_decimals=6, use_weights=0, heuristic=0
+):
     # data is [k, T_h] array
     # klist is list with T_h entries, each being an integer lower than k; number of barycenters for each time step
     (k, T_h) = data.shape
@@ -148,7 +151,7 @@ def empirical_k_means_measure(data, use_klist=0, klist=(), tol_decimals=6, use_w
             data_t = data[:, t]
             inds_sort_t = np.argsort(data_t)
             datas_t = data_t[inds_sort_t]
-            n_av = int(np.round(k/klist[t]))
+            n_av = int(np.round(k / klist[t]))
             lmax = int(np.floor(n_av * klist[t]))
             all_but_end = np.reshape(datas_t[:lmax], (-1, n_av))
             mean_all_but = np.mean(all_but_end, axis=1, keepdims=1)
@@ -157,7 +160,9 @@ def empirical_k_means_measure(data, use_klist=0, klist=(), tol_decimals=6, use_w
             mean_all_but = np.reshape(mean_all_but, (-1, 1))
             mean_rest = np.mean(datas_t[lmax:])
             if lmax < k:
-                mean_vec = np.concatenate([np.squeeze(mean_all_but), np.array([mean_rest])])
+                mean_vec = np.concatenate(
+                    [np.squeeze(mean_all_but), np.array([mean_rest])]
+                )
                 cx = np.concatenate([cx, np.array([mean_rest])])
             else:
                 mean_vec = np.squeeze(mean_all_but)
@@ -173,7 +178,7 @@ def empirical_k_means_measure(data, use_klist=0, klist=(), tol_decimals=6, use_w
     else:
         for t in range(T_h):
             # print('t = ' + str(t))
-            data_t = data[:, t:t+1]
+            data_t = data[:, t : t + 1]
             kmx = KMeans(n_clusters=klist[t]).fit(data_t)
             cx = kmx.cluster_centers_
             cx = np.round(cx, decimals=tol_decimals)
@@ -181,7 +186,9 @@ def empirical_k_means_measure(data, use_klist=0, klist=(), tol_decimals=6, use_w
             label_list.append(lx)
             support_list.append(cx)
 
-    if use_weights == 0:  # weight all cluster centers equally? ... Convenient but theoretically flawed I think
+    if (
+        use_weights == 0
+    ):  # weight all cluster centers equally? ... Convenient but theoretically flawed I think
         out = np.zeros([k, T_h])
         for t in range(T_h):
             out[:, t] = support_list[t][label_list[t]][:, 0]
@@ -226,8 +233,10 @@ def binomial():
         if node == 0:
             return [[0], [1]]
         else:
-            x = x_parents[0]  # should only contain one element as the structure is Markovian
-            return [[x-1, x+1], [0.5, 0.5]]
+            x = x_parents[
+                0
+            ]  # should only contain one element as the structure is Markovian
+            return [[x - 1, x + 1], [0.5, 0.5]]
 
     def sup_mu(node_list):
         if len(node_list) == 0:
@@ -235,16 +244,19 @@ def binomial():
             out = out.reshape(-1, 1)
             return out
         if len(node_list) == 1:
-            t = node_list[0]  # we only need to supply support for single element node-lists, as no two nodes share a child
-            sup_l = [x for x in range(-t, t+1, 2)]
+            t = node_list[
+                0
+            ]  # we only need to supply support for single element node-lists, as no two nodes share a child
+            sup_l = [x for x in range(-t, t + 1, 2)]
         else:
             lol = []
             node_list_c = sorted(list(node_list))
             for t in node_list_c:
-                lol.append([x for x in range(-t, t+1, 2)])
+                lol.append([x for x in range(-t, t + 1, 2)])
             sup_l = list(product(*lol))
         bt = len(node_list)
         return np.reshape(np.array(sup_l), (-1, bt))
+
     return mu, sup_mu
 
 
@@ -256,8 +268,10 @@ def trinomial():
         if node == 0:
             return [[0], [1]]
         else:
-            x = x_parents[0]  # should only contain one element as the structure is Markovian
-            return [[x-1, x, x+1], [1/3, 1/3, 1/3]]
+            x = x_parents[
+                0
+            ]  # should only contain one element as the structure is Markovian
+            return [[x - 1, x, x + 1], [1 / 3, 1 / 3, 1 / 3]]
 
     def sup_mu(node_list):
         if len(node_list) == 0:
@@ -265,8 +279,10 @@ def trinomial():
             out = out.reshape(-1, 1)
             return out
         if len(node_list) == 1:
-            t = node_list[0]  # we only need to supply support for single element node-lists, as no two nodes share a child
-            sup_l = [x for x in range(-t, t+1)]
+            t = node_list[
+                0
+            ]  # we only need to supply support for single element node-lists, as no two nodes share a child
+            sup_l = [x for x in range(-t, t + 1)]
         else:
             lol = []
             node_list_c = sorted(list(node_list))
@@ -275,29 +291,32 @@ def trinomial():
             sup_l = list(product(*lol))
         bt = len(node_list)
         return np.reshape(np.array(sup_l), (-1, bt))
+
     return mu, sup_mu
 
 
 def rand_tree_pichler(T, num_branch=(2, 3, 2, 3, 4), init=10, udrange=10, discr=0):
     # Trying to implement the method in Chapter 5 from https://arxiv.org/pdf/2102.05413.pdf
 
-    transitions = {}  # take as key a tuple of an (integer node and integer value) and returns a measure
+    transitions = (
+        {}
+    )  # take as key a tuple of an (integer node and integer value) and returns a measure
     supports = {}  # takes as input a node and returns a set of integer support points
-    for i in range(T+1):
+    for i in range(T + 1):
         supports[i] = set([])
 
     for t in range(T):
         if t == 0:
-            if discr==0:
+            if discr == 0:
                 supports[0] = {init}
             else:
                 supports[0] = {0}
             nbh = num_branch[0]
             probs = np.random.random_sample(nbh)
-            probs = probs/np.sum(probs)
+            probs = probs / np.sum(probs)
             if not discr:
                 supps = np.random.randint(-udrange, udrange, size=[nbh, 1])
-                supps_int = set(np.squeeze(10+supps, axis=1))
+                supps_int = set(np.squeeze(10 + supps, axis=1))
                 supports[1] |= supps_int
                 transitions[(t + 1, init)] = [10 + supps, probs]
             else:
@@ -310,31 +329,38 @@ def rand_tree_pichler(T, num_branch=(2, 3, 2, 3, 4), init=10, udrange=10, discr=
             for x_int in supports[t]:
                 nbh = num_branch[t]
                 probs = np.random.random_sample(nbh)
-                probs = probs/np.sum(probs)
+                probs = probs / np.sum(probs)
                 if not discr:
                     supps = np.random.randint(-udrange, udrange, size=[nbh, 1])
-                    supps_int = set(np.squeeze(x_int+supps, axis=1))
+                    supps_int = set(np.squeeze(x_int + supps, axis=1))
                     supports[t + 1] |= supps_int
                     transitions[(t + 1, x_int)] = [x_int + supps, probs]
                 else:
                     supps = np.arange(0, nbh)
                     supps = supps.reshape(-1, 1)
                     supps_int = set(np.squeeze(supps, axis=1))
-                    supports[t+1] |= supps_int
-                    transitions[(t+1, x_int)] = [supps, probs]
+                    supports[t + 1] |= supps_int
+                    transitions[(t + 1, x_int)] = [supps, probs]
 
     if discr == 0:
+
         def mu(node, x_parents):
             if node == 0:
                 return [np.reshape(np.array([10]), (-1, 1)), [1]]
-            x = x_parents[0]  # should only contain one element as the structure is Markovian
+            x = x_parents[
+                0
+            ]  # should only contain one element as the structure is Markovian
             x = int(x)
             return transitions[(node, x)]
+
     else:
+
         def mu(node, x_parents):
             if node == 0:
                 return [np.reshape(np.array([0]), (-1, 1)), [1]]
-            x = x_parents[0]  # should only contain one element as the structure is Markovian
+            x = x_parents[
+                0
+            ]  # should only contain one element as the structure is Markovian
             x = int(x)
             return transitions[(node, x)]
 
@@ -343,9 +369,11 @@ def rand_tree_pichler(T, num_branch=(2, 3, 2, 3, 4), init=10, udrange=10, discr=
             out = np.array([])
             out = out.reshape(-1, 1)
             return out
-        return np.reshape(np.array(list(supports[node_list[0]])), (-1, 1))  # we only supply support for single nodes
+        return np.reshape(
+            np.array(list(supports[node_list[0]])), (-1, 1)
+        )  # we only supply support for single nodes
 
-    print('Warning: You are using a measure where only one-step supports are specified')
+    print("Warning: You are using a measure where only one-step supports are specified")
     return mu, sup_mu
 
 
@@ -415,7 +443,9 @@ def reduce_meas(marg, filt=0):
     return [uniques, w_new]
 
 
-def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_mu=0, tol=10**-6, filt=0):
+def get_marginals_multi(
+    mu, supp_mu, node_set, g, given_margs, all_out=0, index_mu=0, tol=10**-6, filt=0
+):
     # function should get a joint distribution on the specified node set. I.e., we want to go from disintegration
     # representation of a measure towards specifying the joint distribution.
     # node_set is a tuple containing the nodes that we wish to calculate the joint marginal on
@@ -455,7 +485,9 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
             else:
                 marg_x_nh = mu(nh, 0)
             if len(np.array(marg_x_nh[0]).shape) == 2:
-                x_lists.append(marg_x_nh[0][:, 0])  # marg_x_nh[0] is always of shape [n, 1]
+                x_lists.append(
+                    marg_x_nh[0][:, 0]
+                )  # marg_x_nh[0] is always of shape [n, 1]
                 if filt == 1:
                     filt_list_a.append(marg_x_nh[2][:, 0])
                     filt_list_b.append(marg_x_nh[2][:, 1])
@@ -496,9 +528,20 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
             return given_margs
     elif not rel_par in given_margs:
         if all_out == 0:
-            rel_marg = get_marginals_multi(mu, supp_mu, rel_par, g, given_margs, index_mu=index_mu, filt=filt)
+            rel_marg = get_marginals_multi(
+                mu, supp_mu, rel_par, g, given_margs, index_mu=index_mu, filt=filt
+            )
         else:
-            all_margs = get_marginals_multi(mu, supp_mu, rel_par, g, given_margs, all_out=1, index_mu=index_mu, filt=filt)
+            all_margs = get_marginals_multi(
+                mu,
+                supp_mu,
+                rel_par,
+                g,
+                given_margs,
+                all_out=1,
+                index_mu=index_mu,
+                filt=filt,
+            )
             rel_marg = all_margs[rel_par]
     else:
         rel_marg = given_margs[rel_par]
@@ -509,7 +552,7 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
     out_x = np.zeros([0, d])
     out_w = []
     if filt == 1:
-        out_f = np.zeros([0, 2*d])
+        out_f = np.zeros([0, 2 * d])
     if index_mu == 1:
         if filt == 1:
             supp_rel_p = supp_mu(rel_par, filt=1)
@@ -521,7 +564,9 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
         xh = rel_marg[0][i, :]
         wh = rel_marg[1][i]
         if filt == 1:
-            fh = rel_marg[2][i, :]  # filtration of marginal; second dimension should be double that of xh
+            fh = rel_marg[2][
+                i, :
+            ]  # filtration of marginal; second dimension should be double that of xh
         if wh == 0:
             continue
 
@@ -533,11 +578,13 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
                         ind_rel_here = j
                         break
                 else:
-                    if np.all(np.abs(xh - supp_rel[j, :]) < tol) and np.all(np.abs(fh - filt_rel[j, :]) < tol):
+                    if np.all(np.abs(xh - supp_rel[j, :]) < tol) and np.all(
+                        np.abs(fh - filt_rel[j, :]) < tol
+                    ):
                         ind_rel_here = j
                         break
             if ind_rel_here == -1:
-                print('ERROR: relevant support point not found...')
+                print("ERROR: relevant support point not found...")
 
         # for each node in node_set, get the parent values from xh
         x_lists = []
@@ -552,13 +599,13 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
                 w_lists.append([1])
                 if filt == 1:
                     filt_list_a.append([fh[ind_nh]])
-                    filt_list_b.append([fh[len(rel_par)+ind_nh]])
+                    filt_list_b.append([fh[len(rel_par) + ind_nh]])
             else:
                 if len(indices[ind]) > 0:
                     rel_x = xh[indices[ind]]
                     if filt == 1:
                         rel_filt_a = fh[indices[ind]]
-                        rel_filt_b = fh[len(rel_par)+indices[ind]]
+                        rel_filt_b = fh[len(rel_par) + indices[ind]]
 
                 else:
                     rel_x = []
@@ -570,7 +617,9 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
                 else:
                     marg_x_nh = mu(nh, ind_rel_here)
                 if len(np.array(marg_x_nh[0]).shape) == 2:
-                    x_lists.append(marg_x_nh[0][:, 0])  # marg_x_nh[0] is always of shape [n, 1]
+                    x_lists.append(
+                        marg_x_nh[0][:, 0]
+                    )  # marg_x_nh[0] is always of shape [n, 1]
                     if filt == 1:
                         filt_list_a.append(marg_x_nh[2][:, 0])
                         filt_list_b.append(marg_x_nh[2][:, 1])
@@ -594,7 +643,7 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
             filt_tot = np.append(a_arr, b_arr, axis=1)
             x_list_comb = list(product(*x_lists))
             w_list_comb = list(product(*w_lists))
-            w_list_comb = [np.product(w_here)*wh for w_here in w_list_comb]
+            w_list_comb = [np.product(w_here) * wh for w_here in w_list_comb]
             marg_add = [np.array(x_list_comb), w_list_comb, filt_tot]
             out_x = np.append(out_x, marg_add[0], axis=0)
             out_w.extend(marg_add[1])
@@ -602,7 +651,7 @@ def get_marginals_multi(mu, supp_mu, node_set, g, given_margs, all_out=0, index_
         else:
             x_list_comb = list(product(*x_lists))
             w_list_comb = list(product(*w_lists))
-            w_list_comb = [np.product(w_here)*wh for w_here in w_list_comb]
+            w_list_comb = [np.product(w_here) * wh for w_here in w_list_comb]
             marg_add = [np.array(x_list_comb), w_list_comb]
             marg_add = reduce_meas(marg_add, filt=filt)
             out_x = np.append(out_x, marg_add[0], axis=0)

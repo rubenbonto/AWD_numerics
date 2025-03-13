@@ -2,7 +2,12 @@ import numpy as np
 from normal_ot import solve_sinkhorn, gurobi_2d, solve_pot, solve_unbalanced
 from gurobipy import *
 from time import time
-from measure import get_meas_for_sinkhorn, get_joint_prob, get_full_index_markov, get_start_next_indices
+from measure import (
+    get_meas_for_sinkhorn,
+    get_joint_prob,
+    get_full_index_markov,
+    get_start_next_indices,
+)
 
 """
 This file contains main functions to solve temporal causal and bicausal optimal transport problems
@@ -24,21 +29,33 @@ distribution of mu given that its parents take the values x_parents.
 
 # FUNCTIONS TO SOLVE BICAUSAL PROBLEMS WITH BACKWARD INDUCTION
 
+
 def make_new_vf(p_mu, p_nu, vals):
     # program used to create a new value function out of the solutions to the DPP problems at a given node
     n_vf = len(p_nu)
 
     def new_vf(x, y):
-        ind1 = np.where((np.abs(p_mu - x) <= 10 ** -6).all(axis=1))
+        ind1 = np.where((np.abs(p_mu - x) <= 10**-6).all(axis=1))
         ind1 = ind1[0][0]
-        ind2 = np.where((np.abs(p_nu - y) <= 10 ** -6).all(axis=1))
+        ind2 = np.where((np.abs(p_nu - y) <= 10**-6).all(axis=1))
         ind2 = ind2[0][0]
         return vals[ind1 * n_vf + ind2]
 
     return new_vf
 
 
-def solve_dynamic(cost, mu, nu, supp_mu, supp_nu, g, index_mu=0, index_nu=0, outputflag=1, method='gurobi'):
+def solve_dynamic(
+    cost,
+    mu,
+    nu,
+    supp_mu,
+    supp_nu,
+    g,
+    index_mu=0,
+    index_nu=0,
+    outputflag=1,
+    method="gurobi",
+):
     """
     should solve a (graph) causal Wasserstein model using dynamic programming
     :param cost: a list of functions. each function contains two elements. first element is a list of nodes that this
@@ -61,7 +78,9 @@ def solve_dynamic(cost, mu, nu, supp_mu, supp_nu, g, index_mu=0, index_nu=0, out
     # respective nodes
 
     optis_nodes = []  # list with T entries
-    rel_node_list = []  # list with T entries, each being a tuple of the relevant nodes for the current node
+    rel_node_list = (
+        []
+    )  # list with T entries, each being a tuple of the relevant nodes for the current node
     optis_pars = []  # list with T entries, each being an [n_1, 2*d] array of points
     optis_meas = []  # list with T entries, each being a list of n_1 entries,
     # each being a list with two entries, one [n_2, 2] array of points and one list of length
@@ -143,7 +162,9 @@ def solve_dynamic(cost, mu, nu, supp_mu, supp_nu, g, index_mu=0, index_nu=0, out
                 return out
 
             # solve OT problem!
-            ov, opti = gurobi_2d([input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag)
+            ov, opti = gurobi_2d(
+                [input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag
+            )
             out_vals.append(ov)
             vals.append(ov)
 
@@ -203,14 +224,34 @@ def solve_dynamic(cost, mu, nu, supp_mu, supp_nu, g, index_mu=0, index_nu=0, out
                         return out
 
                     # solve OT problem!
-                    if method == 'gurobi':
-                        ov, opti = gurobi_2d([input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag)
-                    elif method == 'unbalanced':
-                        ov, opti = solve_unbalanced([input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag)
-                    elif method == 'pot':
-                        ov, opti = solve_pot([input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag)
-                    elif method == 'sinkhorn':
-                        ov, opti = solve_sinkhorn([input_mu, input_nu], input_fun, r_opti=1, outputflag=outputflag)
+                    if method == "gurobi":
+                        ov, opti = gurobi_2d(
+                            [input_mu, input_nu],
+                            input_fun,
+                            r_opti=1,
+                            outputflag=outputflag,
+                        )
+                    elif method == "unbalanced":
+                        ov, opti = solve_unbalanced(
+                            [input_mu, input_nu],
+                            input_fun,
+                            r_opti=1,
+                            outputflag=outputflag,
+                        )
+                    elif method == "pot":
+                        ov, opti = solve_pot(
+                            [input_mu, input_nu],
+                            input_fun,
+                            r_opti=1,
+                            outputflag=outputflag,
+                        )
+                    elif method == "sinkhorn":
+                        ov, opti = solve_sinkhorn(
+                            [input_mu, input_nu],
+                            input_fun,
+                            r_opti=1,
+                            outputflag=outputflag,
+                        )
 
                     vals.append(ov)
                     optis.append(opti)
@@ -248,7 +289,18 @@ def solve_dynamic(cost, mu, nu, supp_mu, supp_nu, g, index_mu=0, index_nu=0, out
 
 
 # FUNCTION TO DIRECTLY SOLVE CAUSAL AND BICAUSAL OT VIA LINEAR PROGRAMMING
-def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0, outputflag=1, causal=0, anticausal=0):
+def gurobi_bm(
+    margs,
+    f,
+    p_dist=2,
+    radial_cost=0,
+    f_id=0,
+    minmax="min",
+    r_opti=0,
+    outputflag=1,
+    causal=0,
+    anticausal=0,
+):
     """
     :param margs: list with 2 entries, each entry being a discrete probability measure on R^n, where x_list is an [N, n] array
     :param f: function that takes two inputs, x, y, where the inputs are of the form as in the representation of the
@@ -284,21 +336,23 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
             for j in range(n2):
                 cost_mat[i, j] = f(xl_1[i, :], xl_2[j, :])
     else:
-        cost_mat = np.linalg.norm(xl_1[:, None, :] - xl_2[None, :, :], axis=-1, ord=p_dist)
+        cost_mat = np.linalg.norm(
+            xl_1[:, None, :] - xl_2[None, :, :], axis=-1, ord=p_dist
+        )
         if f_id == 0:
             cost_mat = f(cost_mat)
 
     # initialize model
     # print('Initializing model...')
-    m = Model('Primal')
+    m = Model("Primal")
     if outputflag == 0:
-        m.setParam('OutputFlag', 0)
-    pi_var = m.addVars(n1, n2, lb=0, ub=1, name='pi_var')
+        m.setParam("OutputFlag", 0)
+    pi_var = m.addVars(n1, n2, lb=0, ub=1, name="pi_var")
 
     # add marginal constraints
     # print('Adding constraints...')
-    m.addConstrs((pi_var.sum(i, '*') == pl_1[i] for i in range(n1)), name='first_marg')
-    m.addConstrs((pi_var.sum('*', i) == pl_2[i] for i in range(n2)), name='second_marg')
+    m.addConstrs((pi_var.sum(i, "*") == pl_1[i] for i in range(n1)), name="first_marg")
+    m.addConstrs((pi_var.sum("*", i) == pl_2[i] for i in range(n2)), name="second_marg")
 
     # add causal constraint: (Note: doesn't seem very efficient, but not sure how else to do)
     causal_count = 0
@@ -310,7 +364,9 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
                 y_t_arr, ind_inv_y = np.unique(xl_2[:, :t], axis=0, return_inverse=True)
                 for ind_t_y in range(len(y_t_arr)):
                     pos_h_y = np.where(ind_inv_y == ind_t_y)[0]
-                    x_tp_arr, ind_inv_p = np.unique(xl_1[pos_h, :t+1], axis=0, return_inverse=True)
+                    x_tp_arr, ind_inv_p = np.unique(
+                        xl_1[pos_h, : t + 1], axis=0, return_inverse=True
+                    )
                     for ind_xp in range(len(x_tp_arr)):
                         pos_xtp = np.where(ind_inv_p == ind_xp)[0]
                         pos_xtp_real = pos_h[pos_xtp]
@@ -330,8 +386,17 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
                             mu_sum_right += pl_1[i_x]
 
                         causal_count += 1
-                        m.addConstr(pi_sum_left * mu_sum_left == pi_sum_right * mu_sum_right, name='causal_'+
-                                                           str(t)+'_'+str(ind_t)+'_'+str(ind_t_y)+'_'+str(ind_xp))
+                        m.addConstr(
+                            pi_sum_left * mu_sum_left == pi_sum_right * mu_sum_right,
+                            name="causal_"
+                            + str(t)
+                            + "_"
+                            + str(ind_t)
+                            + "_"
+                            + str(ind_t_y)
+                            + "_"
+                            + str(ind_xp),
+                        )
 
     if anticausal == 1:
         for t in range(1, n_dim):
@@ -343,7 +408,9 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
                 for ind_t_y in range(len(y_t_arr)):
                     pos_h_y = np.where(ind_inv_y == ind_t_y)[0]
 
-                    x_tp_arr, ind_inv_p = np.unique(xl_2[pos_h, :t+1], axis=0, return_inverse=True)
+                    x_tp_arr, ind_inv_p = np.unique(
+                        xl_2[pos_h, : t + 1], axis=0, return_inverse=True
+                    )
                     # TODO: note that we have to concatenate pos_h and pos_p to get real index! (done, but good to keep in mind)
 
                     for ind_xp in range(len(x_tp_arr)):
@@ -368,14 +435,28 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
                         for i_x in pos_xtp_real:
                             mu_sum_right += pl_2[i_x]
 
-                        m.addConstr(pi_sum_left * mu_sum_left == pi_sum_right * mu_sum_right, name='anticausal_'+str(t)+'_'+str(ind_t)+'_'+str(ind_t_y)+'_'+str(ind_xp))
+                        m.addConstr(
+                            pi_sum_left * mu_sum_left == pi_sum_right * mu_sum_right,
+                            name="anticausal_"
+                            + str(t)
+                            + "_"
+                            + str(ind_t)
+                            + "_"
+                            + str(ind_t_y)
+                            + "_"
+                            + str(ind_xp),
+                        )
 
     # Specify objective function
-    if minmax == 'min':
-        obj = quicksum([cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)])
+    if minmax == "min":
+        obj = quicksum(
+            [cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)]
+        )
         m.setObjective(obj, GRB.MINIMIZE)
     else:
-        obj = quicksum([cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)])
+        obj = quicksum(
+            [cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)]
+        )
         m.setObjective(obj, GRB.MAXIMIZE)
 
     # solve model
@@ -388,8 +469,17 @@ def gurobi_bm(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
         return objective_val, [[pi_var[i, j].x for j in range(n2)] for i in range(n1)]
 
 
-def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_stop=10**-4, max_iter=10**4,
-                             reshape=True, outputflag=0):
+def sinkhorn_bicausal_markov(
+    mu_list,
+    nu_list,
+    cost_list,
+    n_list,
+    m_list,
+    eps_stop=10**-4,
+    max_iter=10**4,
+    reshape=True,
+    outputflag=0,
+):
     # Only for MARKOV - MARKOV marginals, bicausal!
     """
 
@@ -413,19 +503,26 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
     const_f_list = [0]
     const_g_list = [0]
     for t in range(1, t_max):
-        f_h = [[np.ones([len(mu_list[t][i][1]), 1]) for j in range(m_list[t-1])] for i in range(n_list[t-1])]
-        g_h = [[np.ones([1, len(nu_list[t][j][1])]) for j in range(m_list[t-1])] for i in range(n_list[t-1])]
-        c_f_h = [[1 for j in range(m_list[t-1])] for i in range(n_list[t-1])]
-        c_g_h = [[1 for j in range(m_list[t-1])] for i in range(n_list[t-1])]
+        f_h = [
+            [np.ones([len(mu_list[t][i][1]), 1]) for j in range(m_list[t - 1])]
+            for i in range(n_list[t - 1])
+        ]
+        g_h = [
+            [np.ones([1, len(nu_list[t][j][1])]) for j in range(m_list[t - 1])]
+            for i in range(n_list[t - 1])
+        ]
+        c_f_h = [[1 for j in range(m_list[t - 1])] for i in range(n_list[t - 1])]
+        c_g_h = [[1 for j in range(m_list[t - 1])] for i in range(n_list[t - 1])]
         f_list.append(f_h)
         g_list.append(g_h)
         const_f_list.append(c_f_h)
         const_g_list.append(c_g_h)
     if outputflag:
-        print('Initializing took ' + str(time()-tinit) + ' seconds')
+        print("Initializing took " + str(time() - tinit) + " seconds")
 
     # Define update iterations:
     t_funs = time()
+
     def update_f_t(mut, nut, gt, ct):
         """
 
@@ -437,9 +534,9 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         """
         # at = 1. / np.sum(gt * ct * nut, axis=1, keepdims=True)
         # at = 1. / np.dot(ct, (gt*nut).T)
-        at = 1. / np.matmul(ct, (gt*nut).T)
+        at = 1.0 / np.matmul(ct, (gt * nut).T)
         cth = np.sum(np.log(at) * mut)
-        return at/np.exp(cth), cth
+        return at / np.exp(cth), cth
 
     def update_g_t(mut, nut, ft, ct):
         """
@@ -452,36 +549,52 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         """
         # bt = 1. / np.sum(ft*ct*mut, axis=0, keepdims=True)
         # bt = 1. / np.dot(ct.T, ft*mut).T
-        bt = 1. / np.matmul(ct.T, ft*mut).T
+        bt = 1.0 / np.matmul(ct.T, ft * mut).T
         cth = np.sum(np.log(bt) * nut)
-        return bt/np.exp(cth), cth
+        return bt / np.exp(cth), cth
 
     def update_f_1(mut, nut, gt, ct):
         # inputs as for update_f_t
-        at = 1. / np.sum(gt * ct * nut, axis=1, keepdims=True)
+        at = 1.0 / np.sum(gt * ct * nut, axis=1, keepdims=True)
         return at, np.sum(np.log(at) * mut)
 
     def update_g_1(mut, nut, ft, ct):
         # inputs as for update_g_t
-        bt = 1. / np.sum(ft * ct * mut, axis=0, keepdims=True)
+        bt = 1.0 / np.sum(ft * ct * mut, axis=0, keepdims=True)
         return bt, np.sum(np.log(bt) * nut)
 
     def full_update_f_list():
         for t_m in range(t_max):
             t = t_max - t_m - 1
             if t > 0:
-                cvnew = np.ones([n_list[t-1], m_list[t-1]])
+                cvnew = np.ones([n_list[t - 1], m_list[t - 1]])
             if t == 0:
-                f_list[0], value_f = update_f_1(mu_list[0][1], nu_list[0][1], g_list[0], cost_list[0][mu_list[0][0], :][:, nu_list[0][0]] * cvh[mu_list[0][0], :][:, nu_list[0][0]])
-            elif t == t_max-1:
-                for i in range(n_list[t-1]):
-                    for j in range(m_list[t-1]):
-                        f_list[t][i][j], cvnew[i, j] = update_f_t(mu_list[t][i][1], nu_list[t][j][1], g_list[t][i][j], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                f_list[0], value_f = update_f_1(
+                    mu_list[0][1],
+                    nu_list[0][1],
+                    g_list[0],
+                    cost_list[0][mu_list[0][0], :][:, nu_list[0][0]]
+                    * cvh[mu_list[0][0], :][:, nu_list[0][0]],
+                )
+            elif t == t_max - 1:
+                for i in range(n_list[t - 1]):
+                    for j in range(m_list[t - 1]):
+                        f_list[t][i][j], cvnew[i, j] = update_f_t(
+                            mu_list[t][i][1],
+                            nu_list[t][j][1],
+                            g_list[t][i][j],
+                            cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]],
+                        )
             else:
-                for i in range(n_list[t-1]):
-                    for j in range(m_list[t-1]):
-                        f_list[t][i][j], cvnew[i, j] = update_f_t(mu_list[t][i][1], nu_list[t][j][1], g_list[t][i][j], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
-                                                                  * cvh[mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                for i in range(n_list[t - 1]):
+                    for j in range(m_list[t - 1]):
+                        f_list[t][i][j], cvnew[i, j] = update_f_t(
+                            mu_list[t][i][1],
+                            nu_list[t][j][1],
+                            g_list[t][i][j],
+                            cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                            * cvh[mu_list[t][i][0], :][:, nu_list[t][j][0]],
+                        )
             cvh = np.exp(-cvnew.copy())
             const_f_list[t] = cvh.copy()
         return value_f
@@ -490,24 +603,40 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         for t_m in range(t_max):
             t = t_max - t_m - 1
             if t > 0:
-                cvnew = np.ones([n_list[t-1], m_list[t-1]])
+                cvnew = np.ones([n_list[t - 1], m_list[t - 1]])
             if t == 0:
-                g_list[0], value_g = update_g_1(mu_list[0][1], nu_list[0][1], f_list[0], cost_list[0][mu_list[0][0], :][:, nu_list[0][0]] * cvh[mu_list[0][0], :][:, nu_list[0][0]])
-            elif t == t_max-1:
-                for i in range(n_list[t-1]):
-                    for j in range(m_list[t-1]):
-                        g_list[t][i][j], cvnew[i, j] = update_g_t(mu_list[t][i][1], nu_list[t][j][1], f_list[t][i][j], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                g_list[0], value_g = update_g_1(
+                    mu_list[0][1],
+                    nu_list[0][1],
+                    f_list[0],
+                    cost_list[0][mu_list[0][0], :][:, nu_list[0][0]]
+                    * cvh[mu_list[0][0], :][:, nu_list[0][0]],
+                )
+            elif t == t_max - 1:
+                for i in range(n_list[t - 1]):
+                    for j in range(m_list[t - 1]):
+                        g_list[t][i][j], cvnew[i, j] = update_g_t(
+                            mu_list[t][i][1],
+                            nu_list[t][j][1],
+                            f_list[t][i][j],
+                            cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]],
+                        )
             else:
-                for i in range(n_list[t-1]):
-                    for j in range(m_list[t-1]):
-                        g_list[t][i][j], cvnew[i, j] = update_g_t(mu_list[t][i][1], nu_list[t][j][1], f_list[t][i][j], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
-                                                                  * cvh[mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                for i in range(n_list[t - 1]):
+                    for j in range(m_list[t - 1]):
+                        g_list[t][i][j], cvnew[i, j] = update_g_t(
+                            mu_list[t][i][1],
+                            nu_list[t][j][1],
+                            f_list[t][i][j],
+                            cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                            * cvh[mu_list[t][i][0], :][:, nu_list[t][j][0]],
+                        )
             cvh = np.exp(-cvnew.copy())
             const_g_list[t] = cvh.copy()
         return value_g
 
     if outputflag:
-        print('Defining update functions took ' + str(time()-t_funs) + ' seconds')
+        print("Defining update functions took " + str(time() - t_funs) + " seconds")
 
     if reshape:
         # reshape inputs
@@ -525,29 +654,36 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
                 if len(nu_list[t]) == 2:
                     nu_list[t].append(np.log(nu_list[t][1]))
             else:
-                for i in range(n_list[t-1]):
+                for i in range(n_list[t - 1]):
                     if len(mu_list[t][i][1].shape) == 1:
                         mu_list[t][i][1] = np.expand_dims(mu_list[t][i][1], 1)
                     if len(mu_list[t][i]) == 2:
                         mu_list[t][i].append(np.log(mu_list[t][i][1]))
 
-                for j in range(m_list[t-1]):
+                for j in range(m_list[t - 1]):
                     if len(nu_list[t][j][1].shape) == 1:
                         nu_list[t][j][1] = np.expand_dims(nu_list[t][j][1], 0)
                     if len(nu_list[t][j]) == 2:
                         nu_list[t][j].append(np.log(nu_list[t][j][1]))
 
         if outputflag:
-            print('Reshaping input took ' + str(time()-t_reshape) + ' seconds')
+            print("Reshaping input took " + str(time() - t_reshape) + " seconds")
 
     t_solve = time()
-    prev_val = -10**8
+    prev_val = -(10**8)
     value_f = -100
     value_g = -100
     iter_h = 0
     while iter_h < max_iter and np.abs(prev_val - value_f - value_g) > eps_stop:
         if iter_h % 10 == 0 and outputflag:
-            print('Current iteration:', iter_h, 'Current value:', value_f+value_g, 'Current time:', time()-t_solve)
+            print(
+                "Current iteration:",
+                iter_h,
+                "Current value:",
+                value_f + value_g,
+                "Current time:",
+                time() - t_solve,
+            )
         iter_h += 1
         prev_val = value_f + value_g
         value_f = full_update_f_list()
@@ -555,32 +691,75 @@ def sinkhorn_bicausal_markov(mu_list, nu_list, cost_list, n_list, m_list, eps_st
         # print(value_f)
         # print(value_g)
     if outputflag:
-        print('Solving took ' + str(time()-t_solve) + ' seconds')
+        print("Solving took " + str(time() - t_solve) + " seconds")
 
     # get value without entropy
     for t_m in range(t_max):
         t = t_max - t_m - 1
         if t > 0:
-            V_t = np.zeros([n_list[t-1], m_list[t-1]])
-        if t == t_max-1:
-            for i in range(n_list[t-1]):
-                for j in range(m_list[t-1]):
-                    V_t[i, j] = np.sum(-np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]) * f_list[t][i][j] * g_list[t][i][j] * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]] * (1./const_g_list[t][i, j]) * mu_list[t][i][1] * nu_list[t][j][1])
+            V_t = np.zeros([n_list[t - 1], m_list[t - 1]])
+        if t == t_max - 1:
+            for i in range(n_list[t - 1]):
+                for j in range(m_list[t - 1]):
+                    V_t[i, j] = np.sum(
+                        -np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]])
+                        * f_list[t][i][j]
+                        * g_list[t][i][j]
+                        * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                        * (1.0 / const_g_list[t][i, j])
+                        * mu_list[t][i][1]
+                        * nu_list[t][j][1]
+                    )
         elif t > 0:
-            for i in range(n_list[t-1]):
-                for j in range(m_list[t-1]):
-                    V_t[i, j] = np.sum((-np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]) + V_tp[mu_list[t][i][0], :][:, nu_list[t][j][0]])
-                                       * f_list[t][i][j] * g_list[t][i][j] * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]] *
-                                       const_g_list[t+1][mu_list[t][i][0], :][:, nu_list[t][j][0]] * (1./const_g_list[t][i, j]) * mu_list[t][i][1] * nu_list[t][j][1])
+            for i in range(n_list[t - 1]):
+                for j in range(m_list[t - 1]):
+                    V_t[i, j] = np.sum(
+                        (
+                            -np.log(
+                                cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                            )
+                            + V_tp[mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                        )
+                        * f_list[t][i][j]
+                        * g_list[t][i][j]
+                        * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                        * const_g_list[t + 1][mu_list[t][i][0], :][:, nu_list[t][j][0]]
+                        * (1.0 / const_g_list[t][i, j])
+                        * mu_list[t][i][1]
+                        * nu_list[t][j][1]
+                    )
         else:
-            value = np.sum((-np.log(cost_list[0][mu_list[0][0], :][:, nu_list[0][0]]) + V_tp[mu_list[t][0], :][:, nu_list[t][0]]) * f_list[0] * g_list[0] * cost_list[0][mu_list[0][0], :][:, nu_list[0][0]] * const_g_list[t+1][mu_list[t][0], :][:, nu_list[t][0]] * mu_list[0][1] * nu_list[0][1])
+            value = np.sum(
+                (
+                    -np.log(cost_list[0][mu_list[0][0], :][:, nu_list[0][0]])
+                    + V_tp[mu_list[t][0], :][:, nu_list[t][0]]
+                )
+                * f_list[0]
+                * g_list[0]
+                * cost_list[0][mu_list[0][0], :][:, nu_list[0][0]]
+                * const_g_list[t + 1][mu_list[t][0], :][:, nu_list[t][0]]
+                * mu_list[0][1]
+                * nu_list[0][1]
+            )
         V_tp = V_t.copy()
     return value
     # return 0.0
 
 
-
-def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index_full, nu_next_list, nu_probs_tm1, eps_stop=10**-4, max_iter=10**4, outputflag=0, reshape=1):
+def sinkhorn_causal_markov(
+    mu_list,
+    nu_list,
+    cost_list,
+    n_list,
+    m_list,
+    nu_index_full,
+    nu_next_list,
+    nu_probs_tm1,
+    eps_stop=10**-4,
+    max_iter=10**4,
+    outputflag=0,
+    reshape=1,
+):
     # For MARKOV - MARKOV marginals, causal!
     """
 
@@ -599,14 +778,16 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
     f_1 = np.ones(n_list[0])
     f_list = [f_1]
     for t in range(1, t_max):
-        f_h = [[np.ones([len(mu_list[t][i][1]), 1]) for j in nu_index_full[t-1]] for i in range(n_list[t-1])]
+        f_h = [
+            [np.ones([len(mu_list[t][i][1]), 1]) for j in nu_index_full[t - 1]]
+            for i in range(n_list[t - 1])
+        ]
         f_list.append(f_h)
     s_nu_1Tm1 = nu_index_full[-2]
-    g = [np.ones([1, len(nu_list[t_max-1][iTm1[-2]][1])]) for iTm1 in s_nu_1Tm1]
+    g = [np.ones([1, len(nu_list[t_max - 1][iTm1[-2]][1])]) for iTm1 in s_nu_1Tm1]
     g_vals = [0 for i in range(t_max)]
     if outputflag:
-        print('Initializing took ' + str(time()-tinit) + ' seconds')
-
+        print("Initializing took " + str(time() - tinit) + " seconds")
 
     # Define update iterations:
     t_funs = time()
@@ -617,7 +798,7 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
         # gt should be shaped (1, b), ct (a, b), mut (a, 1), nut (1, b)
 
         # at = 1. / np.sum(gt * ct * nut, axis=1, keepdims=True)
-        at = 1. / np.dot(ct, (gt*nut).T)
+        at = 1.0 / np.dot(ct, (gt * nut).T)
         cth = np.sum(np.log(at) * mut)
         return at / np.exp(cth), cth
 
@@ -631,33 +812,52 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
         :return: array of shape (a, 1) representing f_t
         """
         # at = 1. / np.sum(vtp * ct * nut, axis=1, keepdims=True)
-        at = 1. / np.dot(ct * vtp, nut.T)
+        at = 1.0 / np.dot(ct * vtp, nut.T)
 
-        cth = np.sum(np.log(at)*mut)
+        cth = np.sum(np.log(at) * mut)
         return at / np.exp(cth), cth
 
     def update_f_1(mut, nut, vtp, ct):
         # inputs as for update_f_t
-        at = 1. / np.sum(vtp *ct*nut, axis=1, keepdims=True)
+        at = 1.0 / np.sum(vtp * ct * nut, axis=1, keepdims=True)
         return at, np.sum(np.log(at) * mut)
 
     def full_update_f_list():
         for t_m in range(t_max):
             t = t_max - t_m - 1
             if t > 0:
-                cvnew = np.zeros([n_list[t-1], len(nu_index_full[t-1])])
+                cvnew = np.zeros([n_list[t - 1], len(nu_index_full[t - 1])])
             if t == 0:
-                f_list[0], value_f = update_f_1(mu_list[0][1], nu_list[0][1], cvh, cost_list[0][mu_list[0][0], :][:, nu_list[0][0]])
-            elif t == t_max-1:
-                for i in range(n_list[t-1]):
-                    for j, ind_full in enumerate(nu_index_full[t-1]):
-                        f_list[t][i][j], cvnew[i, j] = update_f_capt(mu_list[t][i][1], nu_list[t][ind_full[-2]][1], g[j], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_full[-2]][0]])
+                f_list[0], value_f = update_f_1(
+                    mu_list[0][1],
+                    nu_list[0][1],
+                    cvh,
+                    cost_list[0][mu_list[0][0], :][:, nu_list[0][0]],
+                )
+            elif t == t_max - 1:
+                for i in range(n_list[t - 1]):
+                    for j, ind_full in enumerate(nu_index_full[t - 1]):
+                        f_list[t][i][j], cvnew[i, j] = update_f_capt(
+                            mu_list[t][i][1],
+                            nu_list[t][ind_full[-2]][1],
+                            g[j],
+                            cost_list[t][mu_list[t][i][0], :][
+                                :, nu_list[t][ind_full[-2]][0]
+                            ],
+                        )
             else:
-                for i in range(n_list[t-1]):
-                    for j, ind_full in enumerate(nu_index_full[t-1]):
-                        isn_start = nu_next_list[t-1][j]
-                        isn_stop = nu_next_list[t-1][j+1]
-                        f_list[t][i][j], cvnew[i, j] = update_f_t(mu_list[t][i][1], nu_list[t][ind_full[-2]][1], cvh[mu_list[t][i][0], :][:, isn_start:isn_stop], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_full[-2]][0]])
+                for i in range(n_list[t - 1]):
+                    for j, ind_full in enumerate(nu_index_full[t - 1]):
+                        isn_start = nu_next_list[t - 1][j]
+                        isn_stop = nu_next_list[t - 1][j + 1]
+                        f_list[t][i][j], cvnew[i, j] = update_f_t(
+                            mu_list[t][i][1],
+                            nu_list[t][ind_full[-2]][1],
+                            cvh[mu_list[t][i][0], :][:, isn_start:isn_stop],
+                            cost_list[t][mu_list[t][i][0], :][
+                                :, nu_list[t][ind_full[-2]][0]
+                            ],
+                        )
             cvh = np.exp(-cvnew.copy())
         return value_f
 
@@ -671,38 +871,65 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
         :return: vector of shape (b) representing one element of vcur for the next step
         """
         # return np.sum(vcur * ft * ct * mut, axis=0)
-        return np.dot((vcur*ct).T, (ft*mut)).flatten()
+        return np.dot((vcur * ct).T, (ft * mut)).flatten()
 
     def update_g():
         itm1 = nu_index_full[-2]
         val_g = 0
-        for ind_tot in itm1:  # iterate over y_1, ..., y_{T-1} jointly. So g(y) = g(y_{1:T-1}, y_T)
-            snu_shape = np.prod(np.shape(nu_list[t_max-1][ind_tot[-2]][1]))
+        for (
+            ind_tot
+        ) in (
+            itm1
+        ):  # iterate over y_1, ..., y_{T-1} jointly. So g(y) = g(y_{1:T-1}, y_T)
+            snu_shape = np.prod(np.shape(nu_list[t_max - 1][ind_tot[-2]][1]))
             Vcur = 1
             for t_m in range(t_max):
                 t = t_max - t_m - 1
                 if t > 1:
-                    smu_shape = n_list[t-1]
+                    smu_shape = n_list[t - 1]
                 else:
                     smu_shape = 1
                 Vnext = np.zeros([smu_shape, snu_shape])
 
                 for i in range(smu_shape):
-                    if t == t_max-1:
-                        Vnext[i, :] = get_vnext(Vcur, f_list[t][i][ind_tot[-1]], cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_tot[-2]][0]], mu_list[t][i][1])
+                    if t == t_max - 1:
+                        Vnext[i, :] = get_vnext(
+                            Vcur,
+                            f_list[t][i][ind_tot[-1]],
+                            cost_list[t][mu_list[t][i][0], :][
+                                :, nu_list[t][ind_tot[-2]][0]
+                            ],
+                            mu_list[t][i][1],
+                        )
                     elif t > 0:
-                        Vnext[i, :] = get_vnext(Vcur[mu_list[t][i][0], :], f_list[t][i][ind_tot[2*t-1]], cost_list[t][mu_list[t][i][0], ind_tot[2*t]:ind_tot[2*t]+1], mu_list[t][i][1])
+                        Vnext[i, :] = get_vnext(
+                            Vcur[mu_list[t][i][0], :],
+                            f_list[t][i][ind_tot[2 * t - 1]],
+                            cost_list[t][
+                                mu_list[t][i][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                            ],
+                            mu_list[t][i][1],
+                        )
                     else:  # t = 0
-                        Vnext[i, :] = get_vnext(Vcur[0:1, :], f_list[0], cost_list[t][mu_list[t][i][0], ind_tot[2*t]:ind_tot[2*t]+1], mu_list[t][1])
+                        Vnext[i, :] = get_vnext(
+                            Vcur[0:1, :],
+                            f_list[0],
+                            cost_list[t][
+                                mu_list[t][i][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                            ],
+                            mu_list[t][1],
+                        )
 
                 Vcur = Vnext.copy()
                 g_vals[t] = Vcur.copy()
-            g[ind_tot[-1]] = 1./Vcur.copy()
-            val_g += nu_probs_tm1[ind_tot[-1]] * np.sum(np.log(g[ind_tot[-1]]) * nu_list[t_max-1][ind_tot[-2]][1])
+            g[ind_tot[-1]] = 1.0 / Vcur.copy()
+            val_g += nu_probs_tm1[ind_tot[-1]] * np.sum(
+                np.log(g[ind_tot[-1]]) * nu_list[t_max - 1][ind_tot[-2]][1]
+            )
         return val_g
 
     if outputflag:
-        print('Defining update functions took ' + str(time()-t_funs) + ' seconds')
+        print("Defining update functions took " + str(time() - t_funs) + " seconds")
 
     # reshape inputs
     # we want mu_list[t][i][1] to be shaped (a, 1) and nu_list[t][j][1] to be shaped (1, b) for some a and b that may
@@ -714,21 +941,21 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
                 mu_list[t][1] = np.expand_dims(mu_list[t][1], 1)
                 nu_list[t][1] = np.expand_dims(nu_list[t][1], 0)
             else:
-                for i in range(n_list[t-1]):
+                for i in range(n_list[t - 1]):
                     mu_list[t][i][1] = np.expand_dims(mu_list[t][i][1], 1)
-                for j in range(m_list[t-1]):
+                for j in range(m_list[t - 1]):
                     nu_list[t][j][1] = np.expand_dims(nu_list[t][j][1], 0)
         if outputflag:
-            print('Reshaping input took ' + str(time()-t_reshape) + ' seconds')
+            print("Reshaping input took " + str(time() - t_reshape) + " seconds")
 
     t_solve = time()
-    prev_val = -10**8
+    prev_val = -(10**8)
     value_f = -100
     value_g = -100
     iter_h = 0
     while iter_h < max_iter and np.abs(prev_val - value_f - value_g) > eps_stop:
         if iter_h % 10 == 0 and outputflag:
-            print('Current iteration:', iter_h, 'Current value:', value_f+value_g)
+            print("Current iteration:", iter_h, "Current value:", value_f + value_g)
         iter_h += 1
         prev_val = value_f + value_g
         value_f = full_update_f_list()
@@ -736,13 +963,15 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
         # print(value_f)
         # print(value_g)
     if outputflag:
-        print('Solving took ' + str(time()-t_solve) + ' seconds')
+        print("Solving took " + str(time() - t_solve) + " seconds")
 
     # get value without entropy
     itm1 = nu_index_full[-2]
     value = 0
     const_val = 0
-    for j, ind_tot in enumerate(itm1):  # iterate over y_1, ..., y_{T-1} jointly. So g(y) = g(y_{1:T-1}, y_T)
+    for j, ind_tot in enumerate(
+        itm1
+    ):  # iterate over y_1, ..., y_{T-1} jointly. So g(y) = g(y_{1:T-1}, y_T)
         snu_shape = np.prod(np.shape(nu_list[t_max - 1][ind_tot[-2]][1]))
         for t_m in range(t_max):
             t = t_max - t_m - 1
@@ -754,17 +983,92 @@ def sinkhorn_causal_markov(mu_list, nu_list, cost_list, n_list, m_list, nu_index
             Vconst = np.zeros([smu_shape, snu_shape])
             for i in range(smu_shape):
                 if t == t_max - 1:
-                    Vconst[i, :] = np.sum(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_tot[-2]][0]] * f_list[t][i][ind_tot[-1]] * mu_list[t][i][1], axis=0)
-                    Vnext[i, :] = np.sum(-np.log(cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_tot[-2]][0]]) * cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_tot[-2]][0]] * f_list[t][i][ind_tot[-1]] * mu_list[t][i][1], axis=0)
+                    Vconst[i, :] = np.sum(
+                        cost_list[t][mu_list[t][i][0], :][:, nu_list[t][ind_tot[-2]][0]]
+                        * f_list[t][i][ind_tot[-1]]
+                        * mu_list[t][i][1],
+                        axis=0,
+                    )
+                    Vnext[i, :] = np.sum(
+                        -np.log(
+                            cost_list[t][mu_list[t][i][0], :][
+                                :, nu_list[t][ind_tot[-2]][0]
+                            ]
+                        )
+                        * cost_list[t][mu_list[t][i][0], :][
+                            :, nu_list[t][ind_tot[-2]][0]
+                        ]
+                        * f_list[t][i][ind_tot[-1]]
+                        * mu_list[t][i][1],
+                        axis=0,
+                    )
                 elif t > 0:
-                    Vconst[i, :] = np.sum(Vconst_cur[mu_list[t][i][0], :] * cost_list[t][mu_list[t][i][0], ind_tot[2*t]:ind_tot[2*t]+1] * f_list[t][i][ind_tot[2*t-1]]*mu_list[t][i][1], axis=0)
-                    Vnext[i, :] = np.sum((Vcur[mu_list[t][i][0], :] + Vconst_cur[mu_list[t][i][0], :] * (-np.log(cost_list[t][mu_list[t][i][0], ind_tot[2*t]:ind_tot[2*t]+1]))) * cost_list[t][mu_list[t][i][0], ind_tot[2*t]:ind_tot[2*t]+1] * f_list[t][i][ind_tot[2*t-1]]*mu_list[t][i][1], axis=0)
+                    Vconst[i, :] = np.sum(
+                        Vconst_cur[mu_list[t][i][0], :]
+                        * cost_list[t][
+                            mu_list[t][i][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                        ]
+                        * f_list[t][i][ind_tot[2 * t - 1]]
+                        * mu_list[t][i][1],
+                        axis=0,
+                    )
+                    Vnext[i, :] = np.sum(
+                        (
+                            Vcur[mu_list[t][i][0], :]
+                            + Vconst_cur[mu_list[t][i][0], :]
+                            * (
+                                -np.log(
+                                    cost_list[t][
+                                        mu_list[t][i][0],
+                                        ind_tot[2 * t] : ind_tot[2 * t] + 1,
+                                    ]
+                                )
+                            )
+                        )
+                        * cost_list[t][
+                            mu_list[t][i][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                        ]
+                        * f_list[t][i][ind_tot[2 * t - 1]]
+                        * mu_list[t][i][1],
+                        axis=0,
+                    )
                 else:  # t = 0
-                    Vconst[i, :] = np.sum(Vconst_cur[mu_list[t][0], :] * cost_list[t][mu_list[t][0], ind_tot[2 * t]:ind_tot[2*t]+1] * f_list[0]*mu_list[t][1], axis=0)
-                    Vnext[i, :] = np.sum((Vcur[mu_list[t][0], :] + Vconst_cur[mu_list[t][i][0], :] * (-np.log(cost_list[t][mu_list[t][0], ind_tot[2*t]:ind_tot[2*t]+1]))) * cost_list[t][mu_list[t][0], ind_tot[2 * t]:ind_tot[2*t]+1] * f_list[0]*mu_list[t][1], axis=0)
+                    Vconst[i, :] = np.sum(
+                        Vconst_cur[mu_list[t][0], :]
+                        * cost_list[t][
+                            mu_list[t][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                        ]
+                        * f_list[0]
+                        * mu_list[t][1],
+                        axis=0,
+                    )
+                    Vnext[i, :] = np.sum(
+                        (
+                            Vcur[mu_list[t][0], :]
+                            + Vconst_cur[mu_list[t][i][0], :]
+                            * (
+                                -np.log(
+                                    cost_list[t][
+                                        mu_list[t][0],
+                                        ind_tot[2 * t] : ind_tot[2 * t] + 1,
+                                    ]
+                                )
+                            )
+                        )
+                        * cost_list[t][
+                            mu_list[t][0], ind_tot[2 * t] : ind_tot[2 * t] + 1
+                        ]
+                        * f_list[0]
+                        * mu_list[t][1],
+                        axis=0,
+                    )
             Vcur = Vnext.copy()
             Vconst_cur = Vconst.copy()
-        value += nu_probs_tm1[ind_tot[-1]] * np.sum(Vcur * nu_list[t_max-1][ind_tot[-2]][1] * g[j])
-        const_val += nu_probs_tm1[ind_tot[-1]] * np.sum(Vconst_cur * nu_list[t_max-1][ind_tot[-2]][1] * g[j])
+        value += nu_probs_tm1[ind_tot[-1]] * np.sum(
+            Vcur * nu_list[t_max - 1][ind_tot[-2]][1] * g[j]
+        )
+        const_val += nu_probs_tm1[ind_tot[-1]] * np.sum(
+            Vconst_cur * nu_list[t_max - 1][ind_tot[-2]][1] * g[j]
+        )
 
     return value

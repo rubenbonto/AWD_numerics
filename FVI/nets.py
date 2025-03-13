@@ -6,11 +6,13 @@ from config import *
 #### Copy paster from https://github.com/hanbingyan/FVIOT.
 
 h = 8
+
+
 class DQN(nn.Module):
     def __init__(self, x_dim, y_dim, T):
         super(DQN, self).__init__()
         self.T = T
-        self.linear1 = nn.Linear(x_dim+y_dim, h)
+        self.linear1 = nn.Linear(x_dim + y_dim, h)
         # self.linear1.weight.data.fill_(10.0)
         # torch.nn.init.xavier_uniform_(self.linear1.weight)
         # torch.nn.init.zeros_(self.linear1.weight)
@@ -39,7 +41,7 @@ class DQN(nn.Module):
         state = torch.relu(self.linear2(state))
         # state = self.dropout(state)
         state = torch.sigmoid(self.linear3(state))
-        time_f2 = torch.cat((self.T - time, (self.T - time)**2), dim=1)
-        time_f1 =  self.linear5(time_f2)
+        time_f2 = torch.cat((self.T - time, (self.T - time) ** 2), dim=1)
+        time_f1 = self.linear5(time_f2)
         time_f2 = self.linear6(time_f2)
-        return state*time_f1 + time_f2
+        return state * time_f1 + time_f2

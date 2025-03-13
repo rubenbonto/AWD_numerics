@@ -5,7 +5,6 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 
-
 def visualize_tree(tree_root, title="Tree Visualization"):
     """
     Visualizes the stochastic tree using NetworkX and Matplotlib.
@@ -26,7 +25,7 @@ def visualize_tree(tree_root, title="Tree Visualization"):
             assign_depths(child, current_depth + 1)
 
     assign_depths(tree_root)
-    
+
     name_to_node = {}
 
     def add_edges(node, parent_name=None, x=0, y=0, dx=1.0):
@@ -55,33 +54,48 @@ def visualize_tree(tree_root, title="Tree Visualization"):
             num_children = len(node.children)
             width = dx / num_children
             for i, (child, prob) in enumerate(node.children):
-                child_x = x - dx/2 + i * width + width / 2
+                child_x = x - dx / 2 + i * width + width / 2
                 child_y = y - 1
                 add_edges(child, node_name, child_x, child_y, dx / 2)
-    
+
     add_edges(tree_root)
 
-    node_depths = {node_name: depths.get(name_to_node[node_name], 0) for node_name in G.nodes()}
-    cmap = plt.get_cmap('viridis')
+    node_depths = {
+        node_name: depths.get(name_to_node[node_name], 0) for node_name in G.nodes()
+    }
+    cmap = plt.get_cmap("viridis")
     max_depth = max(node_depths.values(), default=1)
     node_colors = [cmap(depth / max_depth) for depth in node_depths.values()]
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    nx.draw(G, pos, labels=node_labels, with_labels=True, node_size=800, node_color=node_colors, 
-            font_size=8, font_weight="bold", arrows=True, arrowstyle='-|>', arrowsize=10, ax=ax)
-    
+    nx.draw(
+        G,
+        pos,
+        labels=node_labels,
+        with_labels=True,
+        node_size=800,
+        node_color=node_colors,
+        font_size=8,
+        font_weight="bold",
+        arrows=True,
+        arrowstyle="-|>",
+        arrowsize=10,
+        ax=ax,
+    )
+
     edge_labels = {(u, v): f"{d['weight']:.2f}" for u, v, d in G.edges(data=True)}
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6, ax=ax)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_depth))
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, shrink=0.5)
-    cbar.set_label('Depth')
+    cbar.set_label("Depth")
 
     plt.title(title)
-    plt.axis('off')
+    plt.axis("off")
     plt.tight_layout()
     plt.show()
+
 
 def find_node_by_value(node, value):
     """
@@ -96,13 +110,8 @@ def find_node_by_value(node, value):
     return None
 
 
-
-
-
-
-
-
 #### for big trees!!
+
 
 def gather_paths(root):
     """
@@ -123,16 +132,12 @@ def gather_paths(root):
         if not node.children:
             paths.append((path_values, path_prob))
         else:
-            for (child, p) in node.children:
-                stack.append((child,
-                              path_values + [child.value],
-                              path_prob * p))
+            for child, p in node.children:
+                stack.append((child, path_values + [child.value], path_prob * p))
     return paths
 
 
-
-
-def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
+def visualize_big_tree(tree_root, fig_size=(10, 6), title="Stochastic Tree"):
     """
     Plots a 'fan' or 'scenario tree' style visualization:
       - On the left: lines of state vs. stage/time for each root-to-leaf path.
@@ -155,7 +160,7 @@ def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
     #    - left: scenario paths
     #    - right: final distribution
     fig, (ax_left, ax_right) = plt.subplots(
-        1, 2, figsize=fig_size, gridspec_kw={'width_ratios': [3, 1]}, sharey=True
+        1, 2, figsize=fig_size, gridspec_kw={"width_ratios": [3, 1]}, sharey=True
     )
 
     fig.suptitle(title, fontsize=14)
@@ -191,8 +196,8 @@ def visualize_big_tree(tree_root, fig_size=(10,6), title="Stochastic Tree"):
     kde = gaussian_kde(leaf_values, weights=leaf_probs)
     pdf = kde(y_grid)  # evaluate density on the grid
 
-    ax_right.plot(pdf, y_grid, color='blue')
-    ax_right.fill_betweenx(y_grid, 0, pdf, color='blue', alpha=0.2)
+    ax_right.plot(pdf, y_grid, color="blue")
+    ax_right.fill_betweenx(y_grid, 0, pdf, color="blue", alpha=0.2)
     ax_right.set_title("Final State Distribution")
     ax_right.set_xlabel("Density")
     # Mirror the y-limits of the left axis

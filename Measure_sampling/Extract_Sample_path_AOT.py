@@ -7,14 +7,14 @@ import numpy as np
 def extract_sample_paths(mu, T, init):
     """
     Extract full sample paths and their weights from a disintegrated measure.
-    
+
     Parameters:
       mu: A function representing the disintegrated measure. It accepts (node, x_parents)
           and returns a tuple [support, weights], where support is a 2D array (n x 1) of possible
           values at the given node and weights is a list (or array) of probabilities.
       T: Total number of time steps (i.e., nodes are 0, 1, ..., T). Note that T is the final node.
       init: The initial state (used at node 0).
-    
+
     Returns:
       paths: A NumPy array of shape (N_paths, T+1) where each row is a sample path.
       weights: A NumPy array of shape (N_paths,) with the corresponding probability weights.
@@ -22,7 +22,7 @@ def extract_sample_paths(mu, T, init):
     # Start at node 0 with the initial state.
     paths = [[init]]
     weights = [1.0]
-    
+
     # For nodes 1 through T, extend each path using the measure mu.
     for t in range(1, T + 1):
         new_paths = []

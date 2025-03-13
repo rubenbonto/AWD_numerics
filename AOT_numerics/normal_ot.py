@@ -5,7 +5,9 @@ import ot
 # This file contains different functions to solve a normal OT problem with two marginals using different methods.
 
 
-def gurobi_2d(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0, outputflag=1):
+def gurobi_2d(
+    margs, f, p_dist=2, radial_cost=0, f_id=0, minmax="min", r_opti=0, outputflag=1
+):
     """
     :param margs: list with 2 entries, each entry being a discrete probability measure
     :param f: function that takes two inputs, x, y, where the inputs are of the form as in the representation of the
@@ -41,27 +43,32 @@ def gurobi_2d(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
             for j in range(n2):
                 cost_mat[i, j] = f(xl_1[i], xl_2[j])
     else:
-        cost_mat = np.linalg.norm(xl_1[:, None, :] - xl_2[None, :, :], axis=-1, ord=p_dist)
+        cost_mat = np.linalg.norm(
+            xl_1[:, None, :] - xl_2[None, :, :], axis=-1, ord=p_dist
+        )
         if f_id == 0:
             cost_mat = f(cost_mat)
 
-
     # initialize model
-    m = Model('Primal')
+    m = Model("Primal")
     if outputflag == 0:
-        m.setParam('OutputFlag', 0)
-    pi_var = m.addVars(n1, n2, lb=0, ub=1, name='pi_var')
+        m.setParam("OutputFlag", 0)
+    pi_var = m.addVars(n1, n2, lb=0, ub=1, name="pi_var")
 
     # add marginal constraints
-    m.addConstrs((pi_var.sum(i, '*') == pl_1[i] for i in range(n1)), name='first_marg')
-    m.addConstrs((pi_var.sum('*', i) == pl_2[i] for i in range(n2)), name='second_marg')
+    m.addConstrs((pi_var.sum(i, "*") == pl_1[i] for i in range(n1)), name="first_marg")
+    m.addConstrs((pi_var.sum("*", i) == pl_2[i] for i in range(n2)), name="second_marg")
 
     # Specify objective function
-    if minmax == 'min':
-        obj = quicksum([cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)])
+    if minmax == "min":
+        obj = quicksum(
+            [cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)]
+        )
         m.setObjective(obj, GRB.MINIMIZE)
     else:
-        obj = quicksum([cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)])
+        obj = quicksum(
+            [cost_mat[i, j] * pi_var[i, j] for i in range(n1) for j in range(n2)]
+        )
         m.setObjective(obj, GRB.MAXIMIZE)
 
     # solve model
@@ -74,7 +81,9 @@ def gurobi_2d(margs, f, p_dist=2, radial_cost=0, f_id=0, minmax='min', r_opti=0,
         return objective_val, [[pi_var[i, j].x for j in range(n2)] for i in range(n1)]
 
 
-def solve_unbalanced(margs, f, minmax='min', r_opti=0, outputflag=1, epsilon=0.5, alpha=10):
+def solve_unbalanced(
+    margs, f, minmax="min", r_opti=0, outputflag=1, epsilon=0.5, alpha=10
+):
     """
     should converge to normal ot for alpha --> infty and epsilon --> 0.
     In practice, epsilon lower than 0.01 may cause problems
@@ -103,17 +112,19 @@ def solve_unbalanced(margs, f, minmax='min', r_opti=0, outputflag=1, epsilon=0.5
     for i in range(n1):
         for j in range(n2):
             cost_mat[i, j] = f(xl_1[i], xl_2[j])
-    if minmax == 'max':
+    if minmax == "max":
         cost_mat *= -1
-    Gs = ot.unbalanced.sinkhorn_unbalanced(pl_1, pl_2, cost_mat, epsilon, alpha, verbose=outputflag)
+    Gs = ot.unbalanced.sinkhorn_unbalanced(
+        pl_1, pl_2, cost_mat, epsilon, alpha, verbose=outputflag
+    )
 
     if r_opti == 0:
-        return np.sum(Gs*cost_mat)
+        return np.sum(Gs * cost_mat)
     else:
-        return np.sum(Gs*cost_mat), Gs
+        return np.sum(Gs * cost_mat), Gs
 
 
-def solve_pot(margs, f, minmax='min', r_opti=0, outputflag=1):
+def solve_pot(margs, f, minmax="min", r_opti=0, outputflag=1):
     m1 = margs[0]
     m2 = margs[1]
     xl_1 = np.array(m1[0])
@@ -132,17 +143,17 @@ def solve_pot(margs, f, minmax='min', r_opti=0, outputflag=1):
     for i in range(n1):
         for j in range(n2):
             cost_mat[i, j] = f(xl_1[i], xl_2[j])
-    if minmax == 'max':
+    if minmax == "max":
         cost_mat *= -1
     Gs = ot.emd(pl_1, pl_2, cost_mat)
 
     if r_opti == 0:
-        return np.sum(Gs*cost_mat)
+        return np.sum(Gs * cost_mat)
     else:
-        return np.sum(Gs*cost_mat), Gs
+        return np.sum(Gs * cost_mat), Gs
 
 
-def solve_sinkhorn(margs, f, minmax='min', r_opti=0, outputflag=1, epsilon=0.01):
+def solve_sinkhorn(margs, f, minmax="min", r_opti=0, outputflag=1, epsilon=0.01):
     # should converge to normal ot for epsilon --> 0.
     # In practice, epsilon lower than around 0.01 may cause problems
     m1 = margs[0]
@@ -163,11 +174,11 @@ def solve_sinkhorn(margs, f, minmax='min', r_opti=0, outputflag=1, epsilon=0.01)
     for i in range(n1):
         for j in range(n2):
             cost_mat[i, j] = f(xl_1[i], xl_2[j])
-    if minmax == 'max':
+    if minmax == "max":
         cost_mat *= -1
     Gs = ot.sinkhorn(pl_1, pl_2, cost_mat, epsilon)
 
     if r_opti == 0:
-        return np.sum(Gs*cost_mat)
+        return np.sum(Gs * cost_mat)
     else:
-        return np.sum(Gs*cost_mat), Gs
+        return np.sum(Gs * cost_mat), Gs

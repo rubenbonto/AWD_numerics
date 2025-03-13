@@ -1,6 +1,7 @@
 import numpy as np
 from Tree_Node import *
 
+
 def get_sample_paths(tree_root):
     """
     Extracts all possible paths from the root to the leaves of the tree

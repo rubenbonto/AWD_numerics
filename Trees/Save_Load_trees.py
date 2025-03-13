@@ -1,6 +1,7 @@
 import pickle
 import os
 
+
 def save_tree(tree_root, path, filename):
     """
     Saves a tree to a file using pickle.
@@ -12,7 +13,7 @@ def save_tree(tree_root, path, filename):
     """
     os.makedirs(path, exist_ok=True)
     file_path = os.path.join(path, filename)
-    with open(file_path, 'wb') as f:
+    with open(file_path, "wb") as f:
         pickle.dump(tree_root, f)
     print(f"Tree successfully saved to {file_path}")
 
@@ -29,7 +30,7 @@ def load_tree(path, filename):
     - TreeNode: The root node of the loaded tree.
     """
     file_path = os.path.join(path, filename)
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         tree_root = pickle.load(f)
     print(f"Tree successfully loaded from {file_path}")
     return tree_root
