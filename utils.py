@@ -181,21 +181,27 @@ def plot_V(q2v, q2v_x, q2v_y, V, t, markovian=True, L=None, M=None):
     # Plot
     fig = plt.figure(figsize=(10, 7))
     ax1 = fig.add_subplot(121, projection="3d")
-    ax1.scatter(X, Y, Z, c=Z, cmap="viridis", marker="o")
+    ax1.scatter(X, Y, Z, c=Z, cmap="viridis", marker="o", label="Numerical V")
 
     if L is not None and M is not None:
         Z_2 = (X - Y) ** 2 + (
             L[t, t - 1] / L[t - 1, t - 1] * X - M[t, t - 1] / M[t, t] * Y
         ) ** 2  # Example Z matrix
-        ax1.scatter(X, Y, Z_2, c=Z_2, cmap="autumn", alpha=0.3)
+        ax1.scatter(X, Y, Z_2, c=Z_2, cmap="autumn", alpha=0.3, label="Theoretical V")
 
         ax2 = fig.add_subplot(122, projection="3d")
         ax2.scatter(X, Y, Z - Z_2, c=Z - Z_2, cmap="autumn", alpha=0.3)
 
+        ax2.set_xlabel("X Axis")
+        ax2.set_ylabel("Y Axis")
+        ax2.set_zlabel("Z Axis")
+        ax2.set_title("Error")
+
     # Labels
+    ax1.legend()
     ax1.set_xlabel("X Axis")
     ax1.set_ylabel("Y Axis")
     ax1.set_zlabel("Z Axis")
-    ax1.set_title("3D Surface Plot")
+    ax1.set_title("V(x_t,y_t)")
 
     return fig, ax1
