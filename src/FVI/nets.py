@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from config import *
+from FVI.config import *
 
 
 #### Copy paster from https://github.com/hanbingyan/FVIOT.

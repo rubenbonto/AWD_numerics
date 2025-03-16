@@ -6,9 +6,9 @@ from gurobipy import *
 import ot
 from itertools import product
 from collections import defaultdict
-from normal_ot import *
-from measure import *
-from mainfunctions import *
+from AOT_numerics.normal_ot import *
+from AOT_numerics.measure import *
+from AOT_numerics.mainfunctions import *
 
 """
 This script implements is to reproduce result in:

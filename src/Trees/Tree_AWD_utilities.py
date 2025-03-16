@@ -1,6 +1,6 @@
 import numpy as np
 from collections import deque
-from Tree_Node import TreeNode
+from trees.Tree_Node import TreeNode
 
 
 def get_nodes_at_depth(tree_root, depth):

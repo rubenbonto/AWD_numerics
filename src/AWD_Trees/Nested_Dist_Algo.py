@@ -1,7 +1,7 @@
 import numpy as np
 from collections import deque
-from Discrete_OT_Solver.Discrete_OT_Solver_algo import *
-from Tree_AWD_utilities import *
+from awd_trees.Discrete_OT_Solver_algo import *
+from trees.Tree_AWD_utilities import *
 
 """
 This module implements Algorithm 1 from:

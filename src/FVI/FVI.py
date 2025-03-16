@@ -2,28 +2,20 @@ import numpy as np
 import torch
 import torch.optim as optim
 import ot  # Optimal transport library
-from nets import DQN
-from utils import Memory, optimize_model
 
 from sklearn.cluster import KMeans
-
-import os
-import sys
-
 import time
 
-CD_path = os.path.abspath(
-    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Conditional_density"
-)
 
-if CD_path not in sys.path:
-    sys.path.append(CD_path)
+from FVI.nets import DQN
+from FVI.utils import Memory, optimize_model
 
-from CD_knn_NerualNet import train_conditional_density
-from CD_nonparam import (
+from Conditional_density.CD_knn_NerualNet import train_conditional_density
+from Conditional_density.CD_nonparam import (
     estimate_conditional_density_one_step,
     estimate_conditional_density_two_step,
 )
+
 
 """
 This code is adapted from the paper:

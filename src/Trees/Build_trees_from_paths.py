@@ -1,4 +1,4 @@
-from Tree_Node import TreeNode
+from trees.Tree_Node import TreeNode
 
 
 def build_tree_from_paths(sample_paths, weights):

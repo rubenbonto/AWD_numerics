@@ -1,6 +1,6 @@
 from collections import namedtuple
 import torch.nn as nn
-from config import *
+from FVI.config import *
 
 
 #### Copy paster from https://github.com/hanbingyan/FVIOT.

@@ -1,31 +1,14 @@
-import os
-import sys
 import numpy as np
+import time
 
-# Add Trees path to sys.path
-trees_path = os.path.abspath(
-    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees"
-)
-kmeans_meas_path = os.path.abspath(
-    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Adapted_empirical_measure"
-)
-
-if trees_path not in sys.path:
-    sys.path.append(trees_path)
-
-if kmeans_meas_path not in sys.path:
-    sys.path.append(kmeans_meas_path)
-
-# Now import modules after adding Trees to sys.path
-from Build_trees_from_paths import build_tree_from_paths
-
-from AEM_kMeans import (
+# Import from src (no need to modify sys.path)
+from trees.Build_trees_from_paths import build_tree_from_paths
+from adapted_empirical_measure.AEM_kMeans import (
     empirical_k_means_measure,
     empirical_k_means_measure_new,
     empirical_k_means_measure_grid,
 )
-from AEM_grid import empirical_grid_measure
-import time
+from adapted_empirical_measure.AEM_grid import empirical_grid_measure
 
 
 def generate_brownian_motion(

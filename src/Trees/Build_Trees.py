@@ -1,5 +1,5 @@
-from Tree_Node import TreeNode
-from Save_Load_trees import save_tree
+from trees.Tree_Node import TreeNode
+from trees.Save_Load_trees import save_tree
 
 
 def build_tree_1():
@@ -90,11 +90,11 @@ tree_2_root = build_tree_2()
 # Save trees
 save_tree(
     tree_1_root,
-    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple",
+    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/src/Trees/Data_trees_exemple",
     "tree_1.pkl",
 )
 save_tree(
     tree_2_root,
-    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/Trees/Data_trees_exemple",
+    "/Users/rubenbontorno/Documents/Master_Thesis/Code/AWD_numerics/src/Trees/Data_trees_exemple",
     "tree_2.pkl",
 )
