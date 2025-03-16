@@ -1,11 +1,14 @@
 from collections import defaultdict
+import random
 
+import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 import ot
+from mpl_toolkits.mplot3d import Axes3D
+from tqdm import tqdm
 
 
-def Lmatrix2paths(L, n_sample, normalize=False):
+def Lmatrix2paths(L, n_sample, normalize=False, seed=0):
     r"""
     Lower triangular matrix L to covariance matrix A and generated paths
     """
@@ -22,6 +25,7 @@ def Lmatrix2paths(L, n_sample, normalize=False):
 
     T = len(L)
 
+    np.random.seed(seed)
     noise1 = np.random.normal(size=[T, n_sample])  # (T, n_sample)
     X = L @ noise1  # (T, n_sample)
     X = np.concatenate([np.zeros_like(X[:1]), X], axis=0)  # (T+1, n_sample)
@@ -52,12 +56,13 @@ def adapted_wasserstein_squared(A, B, a=0, b=0):
 
 
 def quantization(adaptedX, adaptedY, markovian=False):
+    print("Quantization ......")
     T = len(adaptedX) - 1
 
     # Global quantization for X union Y samples on grid
     q2v = np.unique(np.concatenate([adaptedX, adaptedY], axis=0))
     v2q = {k: v for v, k in enumerate(q2v)}  # Value to Quantization
-    print("Number of distint values in global quantization: ", len(q2v))
+    print("Number of distinct values in global quantization: ", len(q2v))
 
     def adapted_path2conditional_measure(adaptedpath, v2q, markovian):
         r"""
@@ -112,8 +117,11 @@ def nested(mu_x, nu_y, v2q_x, v2q_y, q2v, markovian=False):
     square_cost_matrix = (q2v[None, :] - q2v[None, :].T) ** 2
 
     V = [np.zeros([len(v2q_x[t]), len(v2q_y[t])]) for t in range(T)]
-    for t in tqdm(range(T - 1, -1, -1)):
-        for k1, v1 in mu_x[t].items():
+    print("Nested backward induction .......")
+    for t in range(T - 1, -1, -1):
+        tqdm_bar = tqdm(mu_x[t].items())
+        for k1, v1 in tqdm_bar:
+            tqdm_bar.set_description(f"Timestep {t}")
             for k2, v2 in nu_y[t].items():
                 # list of probability of conditional distribution mu_x
                 w1 = list(v1.values())
@@ -149,4 +157,45 @@ def nested(mu_x, nu_y, v2q_x, v2q_y, q2v, markovian=False):
                     V[1.2]
 
     AW_2square = V[0][0, 0]
-    return AW_2square
+    return AW_2square, V
+
+
+def plot_V(q2v, q2v_x, q2v_y, V, t, markovian=True, L=None, M=None):
+    if markovian:
+        x = np.array(q2v[q2v_x[t]])
+        y = np.array(q2v[q2v_y[t]])
+    else:
+        x = np.array(q2v[[x[-1] for x in q2v_x[t]]])
+        y = np.array(q2v[[x[-1] for x in q2v_y[t]]])
+    z = V[t]
+
+    ix = random.sample(range(len(x)), min(100, len(x)))
+    iy = random.sample(range(len(y)), min(100, len(y)))
+    x = x[ix]
+    y = y[iy]
+    z = z[np.ix_(ix, iy)]
+
+    X, Y = np.meshgrid(x, y)  # Create meshgrid
+    Z = z.T
+
+    # Plot
+    fig = plt.figure(figsize=(10, 7))
+    ax1 = fig.add_subplot(121, projection="3d")
+    ax1.scatter(X, Y, Z, c=Z, cmap="viridis", marker="o")
+
+    if L is not None and M is not None:
+        Z_2 = (X - Y) ** 2 + (
+            L[t, t - 1] / L[t - 1, t - 1] * X - M[t, t - 1] / M[t, t] * Y
+        ) ** 2  # Example Z matrix
+        ax1.scatter(X, Y, Z_2, c=Z_2, cmap="autumn", alpha=0.3)
+
+        ax2 = fig.add_subplot(122, projection="3d")
+        ax2.scatter(X, Y, Z - Z_2, c=Z - Z_2, cmap="autumn", alpha=0.3)
+
+    # Labels
+    ax1.set_xlabel("X Axis")
+    ax1.set_ylabel("Y Axis")
+    ax1.set_zlabel("Z Axis")
+    ax1.set_title("3D Surface Plot")
+
+    return fig, ax1
