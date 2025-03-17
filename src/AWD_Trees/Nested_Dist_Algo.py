@@ -16,6 +16,8 @@ It supports three different inner optimal transport solvers:
 - Sinkhorn algorithm (Entropic regularization)
 """
 
+from tqdm import tqdm
+
 
 def nested_optimal_transport_loop(
     tree1_root, tree2_root, max_depth, method, lambda_reg, power
@@ -66,7 +68,10 @@ def nested_optimal_transport_loop(
 
         updated_distance_matrix = np.zeros((len(paths_tree1), len(paths_tree2)))
 
-        for i, path1 in enumerate(paths_tree1):
+        tqdm_bar = tqdm(
+            enumerate(paths_tree1), total=len(paths_tree1), desc=f"Depth {depth}"
+        )
+        for i, path1 in tqdm_bar:
             for j, path2 in enumerate(paths_tree2):
                 step_name = (depth, path1[-1], path2[-1])
 
