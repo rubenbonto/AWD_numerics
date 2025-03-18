@@ -15,7 +15,6 @@ It supports three different inner optimal transport solvers:
 - Linear programming (LP)
 - Sinkhorn algorithm (Entropic regularization)
 """
-
 from tqdm import tqdm
 
 
@@ -216,4 +215,124 @@ def compute_nested_distance(
             probability_matrices, tree1_root, tree2_root, max_depth
         )
         return distance, final_prob_matrix
+    return distance
+
+
+# ---------------- Parallel Nested OT Using Chunked Outer Loop ----------------
+
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from tqdm import tqdm
+import numpy as np
+
+
+def process_chunk(
+    chunk_indices,
+    depth,
+    paths_tree1,
+    paths_tree2,
+    children_count_tree1,
+    children_count_tree2,
+    full_distance_matrix,
+    tree1_root,
+    tree2_root,
+    power,
+):
+    """
+    Processes a chunk of outer-loop indices (i values) sequentially.
+    For each i in chunk_indices, iterates over all j in paths_tree2.
+    Returns a list of results for each i in the chunk.
+    Each result is a tuple: (i, list of (j, cost, step_name, probability_matrix))
+    """
+    results = []
+    for i in chunk_indices:
+        row_result = []
+        path1 = paths_tree1[i]
+        for j, path2 in enumerate(paths_tree2):
+            start_row = sum(children_count_tree1[:i])
+            end_row = sum(children_count_tree1[: i + 1])
+            start_col = sum(children_count_tree2[:j])
+            end_col = sum(children_count_tree2[: j + 1])
+            sub_matrix = full_distance_matrix[start_row:end_row, start_col:end_col]
+            pi_ratios, pi_tilde_ratios = compute_marginal_probabilities_for_subset(
+                path1, path2, tree1_root, tree2_root
+            )
+            probability_matrix = solver_lp_pot(sub_matrix, pi_ratios, pi_tilde_ratios)
+            cost = np.sum(probability_matrix * sub_matrix)
+            step_name = (depth, path1[-1], path2[-1])
+            row_result.append((j, cost, step_name, probability_matrix))
+        results.append((i, row_result))
+    return results
+
+
+def nested_optimal_transport_loop_parallel(tree1_root, tree2_root, max_depth, power):
+    """
+    Parallelized version of nested_optimal_transport_loop that splits the outer loop (over paths_tree1)
+    into a fixed number of chunks (e.g., one per core). Each process computes its block sequentially.
+    """
+    probability_matrices = {}
+    full_distance_matrix = compute_distance_matrix_at_depth(
+        tree1_root, tree2_root, max_depth, power
+    )
+
+    for depth in range(max_depth - 1, -1, -1):
+        print("Depth:", depth)
+        paths_tree1 = get_nodes_at_depth(tree1_root, depth)
+        paths_tree2 = get_nodes_at_depth(tree2_root, depth)
+        nodes_tree1 = [find_node_by_path(tree1_root, path) for path in paths_tree1]
+        nodes_tree2 = [find_node_by_path(tree2_root, path) for path in paths_tree2]
+        children_count_tree1 = [len(node.children) for node in nodes_tree1 if node]
+        children_count_tree2 = [len(node.children) for node in nodes_tree2 if node]
+
+        updated_distance_matrix = np.zeros((len(paths_tree1), len(paths_tree2)))
+
+        # Partition the outer loop indices into a fixed number of chunks (e.g., 6)
+        num_chunks = 12
+        indices = list(range(len(paths_tree1)))
+        chunks = np.array_split(indices, num_chunks)
+
+        with ProcessPoolExecutor(max_workers=num_chunks) as executor:
+            futures = []
+            for chunk in chunks:
+                futures.append(
+                    executor.submit(
+                        process_chunk,
+                        list(chunk),
+                        depth,
+                        paths_tree1,
+                        paths_tree2,
+                        children_count_tree1,
+                        children_count_tree2,
+                        full_distance_matrix,
+                        tree1_root,
+                        tree2_root,
+                        power,
+                    )
+                )
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc=f"Parallel Depth {depth}",
+            ):
+                chunk_results = future.result()
+                for i, row_result in chunk_results:
+                    for j, cost, step_name, prob_matrix in row_result:
+                        probability_matrices[step_name] = prob_matrix
+                        updated_distance_matrix[i, j] = cost
+
+        full_distance_matrix = (
+            updated_distance_matrix  # Update for the next depth level
+        )
+
+    return full_distance_matrix[0][0], probability_matrices
+
+
+def compute_nested_distance_parallel(
+    tree1_root, tree2_root, max_depth, return_matrix=False, power=1
+):
+    """
+    Computes the nested Wasserstein distance between two trees using only lp.emd.
+    """
+    distance, probability_matrices = nested_optimal_transport_loop_parallel(
+        tree1_root, tree2_root, max_depth, power
+    )
     return distance
