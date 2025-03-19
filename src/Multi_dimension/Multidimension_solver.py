@@ -1,4 +1,4 @@
-from Multi_dimension.Multidimension_trees import *
+from multi_dimension.Multidimension_trees import *
 from tqdm import tqdm
 
 import ot

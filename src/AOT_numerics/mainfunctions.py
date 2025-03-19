@@ -1,5 +1,5 @@
 import numpy as np
-from AOT_numerics.normal_ot import (
+from aot_numerics.normal_ot import (
     solve_sinkhorn,
     gurobi_2d,
     solve_pot,
@@ -7,7 +7,7 @@ from AOT_numerics.normal_ot import (
 )
 from gurobipy import *
 from time import time
-from AOT_numerics.measure import (
+from aot_numerics.measure import (
     get_meas_for_sinkhorn,
     get_joint_prob,
     get_full_index_markov,
