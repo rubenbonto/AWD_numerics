@@ -126,6 +126,26 @@ def solver_lp_pot(distance_matrix_subset, pi_ratios, pi_tilde_ratios, reg=1e-2):
     return ot.lp.emd(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
 
 
+def solver_lp_pot_distance(
+    distance_matrix_subset, pi_ratios, pi_tilde_ratios, reg=1e-2
+):
+    """
+    Compute the Earth Mover's Distance (EMD) using the POT library's LP solver.
+
+    Parameters:
+    - distance_matrix_subset (np.ndarray): A 2D cost matrix.
+    - pi_ratios (np.ndarray): 1D source distribution (row marginals).
+    - pi_tilde_ratios (np.ndarray): 1D target distribution (column marginals).
+
+    Returns:
+    - float: The Earth Mover's Distance (EMD).
+    """
+    pi_ratios = np.array(pi_ratios, dtype=np.float64)
+    pi_tilde_ratios = np.array(pi_tilde_ratios, dtype=np.float64)
+
+    return ot.lp.emd2(pi_ratios, pi_tilde_ratios, distance_matrix_subset)
+
+
 def solver_pot_sinkhorn(distance_matrix_subset, pi_ratios, pi_tilde_ratios, epsilon):
     """
     Solve for the optimal transport plan using the POT library's sinkhorn solver.
