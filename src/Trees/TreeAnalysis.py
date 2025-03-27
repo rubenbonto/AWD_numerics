@@ -1,5 +1,5 @@
 import numpy as np
-from trees.Tree_Node import *
+from trees.tree_Node import *
 
 
 def get_sample_paths(tree_root):
