@@ -90,7 +90,7 @@ def adapted_wasserstein_squared_1d(a, A, b, B):
 ###############################
 
 
-def adapted_wasserstein_squared(a, A, b, B, d, T):
+def adapted_wasserstein_squared_multidim(a, A, b, B, d, T):
     """
     Computes the Adapted 2-Wasserstein squared distance between two Gaussian measures
     \(\mu = \mathcal{N}(a,A)\) and \(\nu = \mathcal{N}(b,B)\) in \(\mathbb{R}^{dT}\).
