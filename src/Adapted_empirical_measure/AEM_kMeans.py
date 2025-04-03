@@ -13,12 +13,11 @@ Backhoff, J., Bartl, D., Beiglböck, M., & Wiesel, J. (2021). "Estimating Proces
    - arXiv:2002.07261 [math.PR]. Available at: https://arxiv.org/abs/2002.07261
 
 Original implementation source: https://github.com/stephaneckstein/aotnumerics
-
 """
 
 
-# This is the original function I took from the above github
-# The version of https://github.com/stephaneckstein/aotnumerics
+# We typically focus on the second function!
+# The first function is taken from https://github.com/stephaneckstein/aotnumerics
 def empirical_k_means_measure(
     data, use_klist=False, klist=(), tol_decimals=6, use_weights=False, heuristic=False
 ):
@@ -110,30 +109,23 @@ def empirical_k_means_measure(
     return output_samples, output_weights
 
 
-# Our version number of cluster grow until max distance is small
+# Similar to the grid approach but allows flexible grid movement, which is computationally expensive for large samples.
 def empirical_k_means_measure_new(
     data, tol_decimals=6, use_weights=False, delta_n=None
 ):
     """
-    Computes an empirical measure approximation of sample paths using k-means clustering.
-    For each time step t>=1, clustering starts with one cluster and is refined until the maximum
-    absolute deviation from the assigned cluster center is ≤ delta_n.
-
-    The first time step (t == 0) is assumed to be deterministic and is not clustered.
+    K-means clustering with adaptive grid refinement for empirical measure approximation.
+    For each time step t ≥ 1, clustering continues until max deviation is ≤ delta_n.
 
     Parameters:
-    - data (np.ndarray): A (num_samples, time_steps) array representing sample paths.
-    - tol_decimals (int): Number of decimals to round cluster centers to.
-    - use_weights (bool): Whether to weight cluster centers by frequency.
-    - delta_n (float, optional): If None, it is initialized as
-          1 / (num_samples ** (1 / time_steps)).
-          Otherwise, it enforces that the maximum deviation in each time step (between a point
-          and its cluster center) is below this threshold.
+    - data (np.ndarray): (num_samples, time_steps) array representing sample paths.
+    - tol_decimals (int): Rounding precision for cluster centers.
+    - delta_n (float, optional): Max allowable deviation for each time step.
 
     Returns:
-    - np.ndarray: New weighted sample paths approximating an empirical measure.
-    - list (optional): Weights associated with each sample path if use_weights is True.
+    - np.ndarray: Quantized sample paths approximating an empirical measure.
     """
+
     num_samples, time_steps = data.shape
 
     # Initialize delta_n if not provided

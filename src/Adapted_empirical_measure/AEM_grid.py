@@ -1,97 +1,63 @@
 import numpy as np
 
+# In practice, we focus more on uniform grid measures. Both functions achieve the same goal using different approaches:
+# - One function fixes the number of grid support points.
+# - The other function fixes the grid size.
+# Using a fixed grid size and changing the number is in practice what we will be doing (as it leads to more stable results and explicitly gives you the grid size which you can think of as an error bound on your approximation).
 
-# replicate the grid as done in: Estimating Processes in Adapted Wasserstein Distance but not with T+1 but with sqrt n !
-def empirical_grid_measure(data, N=None, use_weights=False):
+
+def uniform_empirical_grid_measure(data, delta_n=None, use_weights=False):
     """
-    Computes an empirical measure approximation of sample paths using grid quantization.
-    Instead of k-means, a single uniform grid (based on the overall minimum and maximum values
-    of the data across all samples and time steps) is used to quantize the sample paths.
-
-    IMPORTANT: The first time step (column) is assumed to be identical across samples and is left unchanged.
+    Computes an empirical measure approximation using grid quantization.
 
     Parameters:
-    - data (np.ndarray): A (num_samples, time_steps) array representing sample paths.
-    - N (int, optional): Number of grid points. Defaults to int(round(sqrt(num_samples))).
-    - use_weights (bool): If True, returns weights for each unique quantized sample path.
+    - data (np.ndarray): (num_samples, time_steps) array representing sample paths.
+    - delta_n (float, optional): Grid spacing. Defaults to 1 / num_path^(1/time_steps).
+    - use_weights (bool): If True, returns weights for unique paths.
 
     Returns:
-    - np.ndarray: New sample paths after quantization.
-    - list (optional): Weights associated with each unique sample path if use_weights is True.
+    - np.ndarray: Quantized sample paths.
+    - np.ndarray (optional): Weights if use_weights is True.
     """
-    num_samples, time_steps = data.shape
-    if N is None:
-        N = int(np.round(np.sqrt(num_samples)))
+    num_path, time_steps = data.shape
+    delta_n = delta_n or 1 / (num_path ** (1 / time_steps))
 
-    # Compute global min and max over the entire dataset (maybe I can try to optimize grid point a bit more)
-    global_min = data.min()
-    global_max = data.max()
-
-    # Create a common grid for all time steps
-    grid = np.linspace(global_min, global_max, N)
-
-    # For each value in the data, find the closest grid point
-    quantized_data = grid[np.abs(data[..., None] - grid).argmin(axis=-1)]
-
-    # Restore the first time step to its original value!
+    quantized_data = np.round(data / delta_n) * delta_n
     quantized_data[:, 0] = data[:, 0]
 
     if not use_weights:
         return quantized_data
 
-    # If weights are needed, aggregate identical sample paths and compute their frequencies
-    unique_paths, indices, counts = np.unique(
-        quantized_data, axis=0, return_inverse=True, return_counts=True
-    )
-    weights = counts / num_samples
+    unique_paths, counts = np.unique(quantized_data, axis=0, return_counts=True)
+    weights = counts / num_path
     return unique_paths, weights
 
 
-# replicate the grid as done in: Estimating Processes in Adapted Wasserstein
-def uniform_empirical_grid_measure(data, delta_n=None, use_weights=False):
+def empirical_grid_measure(data, N=None, use_weights=False):
     """
-    Computes an empirical measure approximation of sample paths using grid quantization.
-    If delta_n is not provided, it is initialized using the formula:
-
-        delta_n = 1/(num_path**(1/t))
-
-    where num_path and t are the dimensions of the input data. Note that since the first
-    time step is trivial (identical across samples), the non-trivial time steps count is (t-1)
-    and we add one for the formula, yielding t in the exponent denominator.
+    Computes an empirical measure approximation of sample paths using a common grid.
 
     Parameters:
-    - data (np.ndarray): A (num_samples, time_steps) array representing sample paths (assumed to be iid).
-    - delta_n (float, optional): Grid spacing used for quantization. If None, it is initialized
-                                 using the formula above.
-    - use_weights (bool): If True, returns weights for each unique quantized sample path.
+    - data (np.ndarray): (num_samples, time_steps) array representing sample paths.
+    - N (int, optional): Number of grid points. Defaults to sqrt(num_samples).
+    - use_weights (bool): If True, returns weights for unique paths.
 
     Returns:
-    - quantized_data (np.ndarray): New sample paths after quantization.
-    - (optional) unique_paths (np.ndarray) and weights (np.ndarray): If use_weights is True,
-      returns the unique quantized paths and their corresponding frequencies.
+    - np.ndarray: Quantized sample paths.
+    - np.ndarray (optional): Weights if use_weights is True.
     """
-    num_path, t = data.shape
+    num_samples, time_steps = data.shape
+    N = N or int(np.sqrt(num_samples))
 
-    if delta_n is None:
-        delta_n = 1 / (
-            num_path ** (1 / t)
-        )  # It is for d = 1 the formula is 1/N^r where r is 1/(T+1) but as we assume deterministic first step T+1 = "t".
+    global_min, global_max = data.min(), data.max()
+    grid = np.linspace(global_min, global_max, N)
 
-    # Define the grid function (round to nearest multiple of delta_n)
-    grid_func = lambda x: np.floor(x / delta_n + 0.5) * delta_n
-
-    # Quantize the data using the grid function
-    quantized_data = grid_func(data)
-
-    # Restore the first time step (assumed to be identical across samples) to its original value
+    quantized_data = grid[np.abs(data[..., None] - grid).argmin(axis=-1)]
     quantized_data[:, 0] = data[:, 0]
 
     if not use_weights:
         return quantized_data
-    else:
-        # Compute unique quantized sample paths along with their counts.
-        unique_paths, indices, counts = np.unique(
-            quantized_data, axis=0, return_inverse=True, return_counts=True
-        )
-        weights = counts / num_path
-        return unique_paths, weights
+
+    unique_paths, counts = np.unique(quantized_data, axis=0, return_counts=True)
+    weights = counts / num_samples
+    return unique_paths, weights
