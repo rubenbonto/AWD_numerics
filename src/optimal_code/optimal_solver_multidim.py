@@ -33,10 +33,11 @@ def solve_ot_multidim(cx, vx, wx, ix, jx, cy, vy, wy, iy, jy, Vtplus, power):
     cost = l_cost_multidim(vx, vy, power)
     if Vtplus is not None:  # for t < T-1
         cost += Vtplus[ix:jx, iy:jy]
+
     if len(vx) == 1 or len(vy) == 1:
-        res = np.dot(np.dot(wx, cost), wy)
+        res = np.dot(np.dot(wx, cost), wy)  # Closed-form solution for singleton case
     else:
-        res = np.sum(cost * ot.lp.emd(wx, wy, cost))
+        res = ot.lp.emd2(wx, wy, cost)  # More efficient computation of OT cost
     return res
 
 
@@ -66,6 +67,24 @@ def nested2_parallel_multidim(
 ):
     r"""
     Compute the nested (adapted) OT cost using dynamic programming.
+
+    Parameters:
+        mu_x_cn, nu_y_cn : list of int
+            Number of conditions at each time step.
+        mu_x_v, nu_y_v : list of np.ndarray
+            Support points of the measures at each time step.
+        mu_x_w, nu_y_w : list of np.ndarray
+            Weights of the measures at each time step.
+        mu_x_cumn, nu_y_cumn : list of np.ndarray
+            Cumulative indices of the supports.
+        n_processes : int, default 6
+            Number of parallel processes.
+        power : int, default 2
+            Power of the cost function.
+
+    Returns:
+        AW_2square : float
+            Adapted Wasserstein squared distance.
     """
     T = len(mu_x_cn)
     V = [np.zeros([mu_x_cn[t], nu_y_cn[t]]) for t in range(T)]

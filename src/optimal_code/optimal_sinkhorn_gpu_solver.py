@@ -1,3 +1,8 @@
+#######################
+# GPU Solver
+##########################
+
+
 import torch
 import time
 from torch.special import logsumexp as lse
@@ -8,8 +13,11 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 _ = torch.randn(10, 10, device="cuda") @ torch.randn(10, 10, device="cuda")
 
+#######################
+# Sinkhorn Iteration
+##########################
 
-# Version TorchScript de l'itération de Sinkhorn en batch.
+
 @torch.jit.script
 def sinkhorn_iteration_batched_jit(
     distance_matrix,
@@ -31,7 +39,6 @@ def sinkhorn_iteration_batched_jit(
         u_prev = u
         u = log_p1 - lse(logK + v.unsqueeze(1), dim=2)
         v = log_p2 - lse(logK.transpose(1, 2) + u.unsqueeze(1), dim=2)
-        # La condition de convergence est évaluée sur le GPU
         if torch.sum(torch.abs(u - u_prev)) < stopping_criterion * B:
             break
     return torch.sum(
@@ -45,6 +52,10 @@ try:
     )
 except Exception:
     pass
+
+#######################
+# Solve Time Step (Vectorized GPU)
+##########################
 
 
 def solve_time_step_vectorized_gpu(
@@ -70,7 +81,6 @@ def solve_time_step_vectorized_gpu(
     n_y, Ly = y_v.shape
     R = torch.zeros((n_x, n_y), device=device)
 
-    # Branche triviale : quand une des longueurs de support vaut 1.
     trivial_mask = ((x_len == 1).unsqueeze(1)) | ((y_len == 1).unsqueeze(0))
     nontrivial_mask = ~trivial_mask
 
@@ -81,8 +91,7 @@ def solve_time_step_vectorized_gpu(
             cost_trivial = cost_trivial + V_extra[triv_i, triv_j, 0, 0]
         R[triv_i, triv_j] = cost_trivial
 
-    # Branche non triviale : les calculs sont regroupés dans un batch.
-    nontrivial_idx = nontrivial_mask.nonzero(as_tuple=False)  # forme : (B, 2)
+    nontrivial_idx = nontrivial_mask.nonzero(as_tuple=False)
     if nontrivial_idx.size(0) > 0:
         B = nontrivial_idx.size(0)
         X_batch = x_v[nontrivial_idx[:, 0]]  # (B, Lx)
@@ -121,7 +130,6 @@ def solve_time_step_vectorized_gpu(
         p1 = WX_valid / (WX_valid.sum(dim=1, keepdim=True) + 1e-10)
         p2 = WY_valid / (WY_valid.sum(dim=1, keepdim=True) + 1e-10)
 
-        # Ici, la boucle itérative est compilée via TorchScript et tourne entièrement sur GPU.
         cost_values = sinkhorn_iteration_batched_jit(
             cost_matrix,
             p1,

@@ -7,9 +7,9 @@ import concurrent.futures
 from optimal_code.utils_multidim import *
 
 
-# --------------------------
-# Markovian conditional measures
-# --------------------------
+##########################
+# Multi dim Markovian utilities
+##########################
 
 
 def qpath2mu_x_markovian_multidim(qpath):
@@ -71,9 +71,11 @@ def list_repr_mu_x_markovian_multidim(mu_x, q2v, quantized_value=False):
     return mu_x_c, mu_x_cn, mu_x_v, mu_x_w, mu_x_cumn, v2q_x, mu_x_idx
 
 
-# --------------------------
-# OT solver for markovian case
-# --------------------------
+##########################
+# Multi dim Markovian Solver
+##########################
+
+
 def solve_ot_markov_multidim(vx, wx, x_next_idx, vy, wy, y_next_idx, Vtplus, power):
     r"""
     Solve the OT problem for one pair of conditional measures.

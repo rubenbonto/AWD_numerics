@@ -8,6 +8,11 @@ import concurrent
 import numpy as np
 
 
+############################
+# Utilities
+###########################
+
+
 def qpath2mu_x_markovian(qpath):
     """
     Quantized Path to Conditional Measure for the markovian case.
@@ -75,6 +80,11 @@ def list_repr_mu_x_markovian(mu_x, q2v, quantized_value=False):
     mu_x_cumn = [np.arange(0, count + 1) for count in mu_x_cn]
 
     return mu_x_c, mu_x_cn, mu_x_v, mu_x_w, mu_x_cumn, v2q_x, mu_x_idx
+
+
+############################
+# Solver
+###########################
 
 
 def nested2_parallel_markovian(

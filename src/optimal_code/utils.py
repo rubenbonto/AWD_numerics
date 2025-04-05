@@ -8,6 +8,11 @@ from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 
 
+###########################
+# NEW UTILITIES
+###########################
+
+
 # Path generation
 def Lmatrix2paths(L, n_sample, normalize=False, seed=0, verbose=False):
     r"""
@@ -136,9 +141,9 @@ def solve_ot(cx, vx, wx, ix, jx, cy, vy, wy, iy, jy, Vtplus, power):
     if len(vx) == 1 or len(vy) == 1:
         res = np.dot(np.dot(wx, cost), wy)  # in this case we has closed solution
     else:
-        res = np.sum(
-            cost * ot.lp.emd(wx, wy, cost)
-        )  # faster than ot.emd2(wx, wy, cost)
+        res = ot.lp.emd2(
+            wx, wy, cost
+        )  # more efficient for memory and speed emd2 thant emd <- then cost mult
     return res
 
 
@@ -171,7 +176,7 @@ def nested2(
     return AW_2square
 
 
-# Bench mark distance
+# Bench mark distance (it is the same as in benchmark_value_gaussian for the 1D case!)
 def adapted_wasserstein_squared(A, B, a=0, b=0):
     # Cholesky decompositions: A = L L^T, B = M M^T
     L = np.linalg.cholesky(A)
@@ -186,7 +191,11 @@ def adapted_wasserstein_squared(A, B, a=0, b=0):
     return mean_diff + trace_sum - 2 * l1_diag
 
 
-### OLD OLD OLD stuff, better understand but slower
+###########################
+# OLD (Not Recommended for Use)
+###########################
+
+
 def quantization(adaptedX, adaptedY, markovian=False, verbose=True):
     T = len(adaptedX) - 1
 
@@ -298,7 +307,11 @@ def nested(mu_x, nu_y, v2q_x, v2q_y, q2v, markovian=False, verbose=True):
     return AW_2square, V
 
 
-# Plotting
+###########################
+# Plotting Utility
+###########################
+
+
 def plot_V(q2v, q2v_x, q2v_y, V, t, markovian=True, L=None, M=None):
     if markovian:
         x = np.array(q2v[q2v_x[t]])
